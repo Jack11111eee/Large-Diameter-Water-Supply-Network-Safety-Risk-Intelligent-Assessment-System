@@ -1,0 +1,40 @@
+{
+  "version": "consequence_scenario_v1",
+  "note": "仅是可复现的团队情景，不是行业标准或经真实损失拟合的系数（方案 §8.1）。改变配置产生新情景版本，不能覆盖旧清单。",
+  "formula": "S_i = w_D*d_i + w_F*f_i + w_R*r_i; C_i = c_min + (1-c_min)*S_i",
+  "c_min": 0.2,
+  "weights": {
+    "w_D": {"num": 1, "den": 3},
+    "w_F": {"num": 1, "den": 3},
+    "w_R": {"num": 1, "den": 3}
+  },
+  "unknown_proxy": {"num": 1, "den": 2},
+  "diameter_map": [
+    {"lower": 300, "upper": 500, "lower_inclusive": true, "upper_inclusive": false, "value": {"num": 0, "den": 1}},
+    {"lower": 500, "upper": 800, "lower_inclusive": true, "upper_inclusive": false, "value": {"num": 1, "den": 3}},
+    {"lower": 800, "upper": 1000, "lower_inclusive": true, "upper_inclusive": false, "value": {"num": 2, "den": 3}},
+    {"lower": 1000, "upper": 1600, "lower_inclusive": true, "upper_inclusive": true, "value": {"num": 1, "den": 1}}
+  ],
+  "road_map": {
+    "支路": {"num": 0, "den": 1},
+    "次干道": {"num": 1, "den": 2},
+    "主干道": {"num": 1, "den": 1}
+  },
+  "facility_map": {
+    "绿地": {"num": 0, "den": 1},
+    "商铺": {"num": 1, "den": 2},
+    "企事业单位": {"num": 1, "den": 2},
+    "居民区": {"num": 3, "den": 4},
+    "住宅小区": {"num": 3, "den": 4},
+    "商业中心": {"num": 3, "den": 4},
+    "学校": {"num": 1, "den": 1},
+    "医院": {"num": 1, "den": 1},
+    "交通枢纽": {"num": 1, "den": 1},
+    "政府机关": {"num": 1, "den": 1}
+  },
+  "sensitivity": {
+    "c_min_alternatives": [0.1, 0.4],
+    "unknown_proxy_alternatives": [0, 1],
+    "note": "另展示 c_min=0.1/0.4 与未知代理取 0/1 的上下情景，不按命中率择优（方案 §8.1）。"
+  }
+}
