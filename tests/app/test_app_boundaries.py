@@ -5,9 +5,13 @@
 """
 
 import ast
+import sys
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import anonymity  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 APP = ROOT / "app"
@@ -154,17 +158,22 @@ def test_app_has_no_absolute_paths():
     """代码中不得出现绝对路径（可移植性）。"""
     for path in _app_sources():
         text = path.read_text(encoding="utf-8")
-        for token in ('"/Users/', "'/Users/", '"/home/', '"/tmp/', "C:\\\\"):
-            assert token not in text, f"{path.relative_to(ROOT)} 含绝对路径 {token}"
+        hits = anonymity.find_absolute_paths(text)
+        assert not hits, f"{path.relative_to(ROOT)} 含绝对路径 {hits}"
 
 
 def test_app_has_no_school_name():
-    """任何文件不得出现校名（赛题硬性扣分项）。"""
-    banned = ("浙江水利水电学院", "水利水电学院", "ZJWEU", "浙江水利")
+    """任何文件不得出现校名（赛题硬性扣分项）。
+
+    禁用词表在被 gitignore 排除的 .anonymity_tokens，不把校名写进公开仓库。
+    """
+    tokens = anonymity.banned_names()
+    if not tokens:
+        pytest.skip("无本地禁用词表 .anonymity_tokens")
     for path in _app_sources():
         text = path.read_text(encoding="utf-8")
-        for token in banned:
-            assert token not in text, f"{path.relative_to(ROOT)} 含禁用名称 {token}"
+        hits = anonymity.find_banned(text, tokens)
+        assert not hits, f"{path.relative_to(ROOT)} 含禁用名称 {hits}"
 
 
 def test_streamlit_imports_are_confined():

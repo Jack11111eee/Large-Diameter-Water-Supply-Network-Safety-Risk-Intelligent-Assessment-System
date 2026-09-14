@@ -12,6 +12,9 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import anonymity  # noqa: E402
+
 from src.decision import (
     advise_post_event,
     advise_predictive,
@@ -67,9 +70,8 @@ def test_decision_module_imports_only_stdlib_and_contracts(path):
 def test_decision_module_has_no_absolute_paths(path):
     """代码中不出现绝对路径（§里程碑 4.6）。"""
     text = path.read_text(encoding="utf-8")
-    assert "/Users/" not in text
-    assert "/home/" not in text
-    assert "C:\\" not in text
+    hits = anonymity.find_absolute_paths(text)
+    assert not hits, f"{path.name} 含绝对路径 {hits}"
 
 
 def test_decision_module_does_not_read_excel():

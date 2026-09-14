@@ -27,3 +27,5 @@ venv/
 
 # macOS
 .DS_Store
+# 匿名检查词表：含校名，不推公开仓库
+.anonymity_tokens

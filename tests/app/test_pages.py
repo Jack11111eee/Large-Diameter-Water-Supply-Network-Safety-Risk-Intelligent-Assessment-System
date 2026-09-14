@@ -5,12 +5,16 @@
 """
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 from streamlit.testing.v1 import AppTest
 
 from app import adapter
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import anonymity  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -183,10 +187,13 @@ def test_resources_budget_change_is_served_by_decision_module(monkeypatch):
 
 
 def test_no_school_name_in_rendered_pages(monkeypatch):
-    """渲染结果中不得出现校名。"""
+    """渲染结果中不得出现校名。禁用词表在 gitignored 的 .anonymity_tokens。"""
+    tokens = anonymity.banned_names()
+    if not tokens:
+        pytest.skip("无本地禁用词表 .anonymity_tokens")
     monkeypatch.setenv(adapter.ENV_PACKAGE_DIR, str(FIXTURES))
     at = AppTest.from_file(str(MAIN), default_timeout=TIMEOUT)
     at.run()
     text = " ".join([m.value for m in at.markdown] + [c.value for c in at.caption])
-    for token in ("浙江水利水电学院", "水利水电学院", "ZJWEU"):
-        assert token not in text
+    hits = anonymity.find_banned(text, tokens)
+    assert not hits, f"渲染结果含禁用名称 {hits}"

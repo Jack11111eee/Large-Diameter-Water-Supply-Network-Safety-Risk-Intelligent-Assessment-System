@@ -31,6 +31,15 @@ python3 -m pytest tests/integration/ # M0 出口判定 + M1 闭环
 `tests/integration/test_m1_closure.py` 是 M1 门禁：真实属性 → 折外概率 →
 逐折成绩 → 概率 Top-K → 页面，并断言页面与导出不重算业务逻辑。
 
+### 匿名检查（§里程碑 4.6）
+
+赛题禁止交付物出现校名。仓库为公开仓库，因此**禁用名称本身也不写进受版本控制的文件**：
+词表放在被 `.gitignore` 排除的 `.anonymity_tokens`（每行一个），由 `tests/anonymity.py`
+读取，`test_app_has_no_school_name` 等守卫用它扫描。
+
+该文件不存在时（如全新克隆）具名词检查会 `skip`，绝对路径检查始终执行。
+本地维护者应保留该文件，提交前跑一次 `python3 -m pytest tests/ -q` 确认匿名检查未 skip。
+
 ## 2.1 启动界面
 
 ```bash
