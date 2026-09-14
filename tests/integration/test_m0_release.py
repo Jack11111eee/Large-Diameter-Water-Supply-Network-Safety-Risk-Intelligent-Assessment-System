@@ -73,6 +73,27 @@ def test_manifest_lists_versions(built):
         assert entry["fingerprint"] and entry["n_rows"] > 0
 
 
+def test_all_artifacts_share_one_data_version(built):
+    """同一发布集合内所有产物的 data_version 必须一致（§13.3）。
+
+    回归：参考分布包曾误用 round_id（'seed20260914'）作 data_version，
+    使版本校验把合法产物判为不兼容。
+    """
+    out, result = built
+    versions = {}
+    for product, fname in [("standard_attributes", "standard_attributes.json"),
+                           ("geometry", "geometry.json"),
+                           ("predictions", "predictions.json"),
+                           ("reference_bundle", "reference_bundle.json")]:
+        rows = json.loads((out / fname).read_text(encoding="utf-8"))
+        versions[product] = {r["data_version"] for r in rows}
+    for product, seen in versions.items():
+        assert seen == {result["data_version"]}, (
+            f"{product} 的 data_version={seen} 与发布版本 {result['data_version']!r} 不一致")
+    m = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert m["data_version"] == result["data_version"]
+
+
 def test_tables_align_by_pipe_id(built):
     """各表按 pipe_id 验证，而非按行位置拼接（§13.6）。"""
     out, _ = built

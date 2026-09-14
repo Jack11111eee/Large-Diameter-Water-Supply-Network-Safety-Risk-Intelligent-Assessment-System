@@ -44,7 +44,8 @@ def build_all(out_dir=OUT_DIR):
 
     # 参考分布（§5.3.1）
     bundle = reference.build_reference_bundle(
-        oof, reference_id=f"{run_id}-oof", model_run_id=run_id)
+        oof, reference_id=f"{run_id}-oof", model_run_id=run_id,
+        data_version=data_version)
 
     # 发布包
     std = release.build_standard_attributes(pipes, data_version=data_version,
