@@ -2,7 +2,7 @@
 
 大口径供水管网安全风险智能评估与决策 —— M0 里程碑（契约冻结 + 基线链路）
 
-依据：`里程碑与分工实施.md` §2.2、§13.6。
+赛题：JBGS-2026-11，湖州市水务集团有限公司。
 
 ---
 
@@ -37,28 +37,28 @@ python3 -m src.integration.pipeline --out /tmp/m0
 
 `outputs/` 按保密要求管理，不纳入版本控制。
 
-## 4. 目录与所有权（§13.2）
+## 4. 目录与模块边界（§13.2）
 
-| 目录 | 所有者 | 说明 |
+| 目录 | 模块 | 说明 |
 |---|---|---|
-| `src/contracts/` | A | schema、版本、错误表示 |
-| `src/data/` | A | 只读加载、白名单、折内预处理 |
-| `src/audit/` | A | 数据审计 |
-| `src/models/` | A | B0/B1/B2 基线、校准 |
-| `src/evaluation/` | A | 划分、指标、折外预测、参考分布包 |
-| `src/integration/` | A | 发布清单、M0 入口 |
-| `src/decision/` | **B** | 分级、后果代理、Top-K、建议（M0 期间由 B 建） |
-| `src/explain/report_gen/` | **B** | 业务建议生成 |
-| `app/` | **C** | 界面 |
-| `configs/contracts/`、`features/`、`models/`、`evaluation/` | A | 公共配置 |
-| `configs/decision/` | **B** | 等级、后果、建议规则配置 |
-| `tests/core/`、`tests/integration/` | A | |
-| `tests/decision/` | **B** | |
-| `tests/app/` | **C** | |
+| `src/contracts/` | 核心 | schema、版本、错误表示 |
+| `src/data/` | 核心 | 只读加载、白名单、折内预处理 |
+| `src/audit/` | 核心 | 数据审计 |
+| `src/models/` | 核心 | B0/B1/B2 基线、校准 |
+| `src/evaluation/` | 核心 | 划分、指标、折外预测、参考分布包 |
+| `src/integration/` | 核心 | 发布清单、M0 入口 |
+| `src/decision/` | 决策 | 分级、后果代理、Top-K、建议 |
+| `src/explain/report_gen/` | 决策 | 业务建议生成 |
+| `app/` | 界面 | 界面 |
+| `configs/contracts/`、`features/`、`models/`、`evaluation/` | 核心 | 公共配置 |
+| `configs/decision/` | 决策 | 等级、后果、建议规则配置 |
+| `tests/core/`、`tests/integration/` | 核心 | |
+| `tests/decision/` | 决策 | |
+| `tests/app/` | 界面 | |
 
-## 5. B 与 C 的离线入口（§13.3）
+## 5. 决策与界面的离线入口（§13.3）
 
-**B、C 不需要两个原始 XLSX，也不需要导入 `src/models/`。**
+**决策与界面模块不需要两个原始 XLSX，也不需要导入 `src/models/`。**
 
 夹具目录：`tests/fixtures/`
 
@@ -68,7 +68,7 @@ python3 -m src.integration.pipeline --out /tmp/m0
 | `geometry.json` | 边起终点坐标、分量、冲突标记、`crs_known=false` |
 | `predictions.json` | 概率（含 `p=null` 的无效预测） |
 | `explanation.json` | 解释（含 `status=unavailable`） |
-| `decision.json` | 决策输出样例（供 C 对样例开发） |
+| `decision.json` | 决策输出样例（供界面对样例开发） |
 | `reference_bundle.json` | 参考分布样例 |
 | `expected_rules.json` | 预期规则触发参考（不是正式结果） |
 
@@ -88,7 +88,7 @@ from src.contracts import validate_package, PRODUCTS, ContractError
 - 数据包含 `schema_version`、`data_version`、`run_id`、`prediction_mode`、`data_kind`。
 - 版本/模式/唯一键不匹配时**拒绝接入并说明原因**，禁止按行号对齐或静默丢行。
 
-## 7. B 的接口（§13.4，签名已冻结）
+## 7. 决策模块接口（§13.4，签名已冻结）
 
 ```python
 grade(predictions, reference_bundle, grade_config)               -> grades
@@ -100,7 +100,7 @@ advise_post_event(pipe_views, event_view, as_of, rules)           -> post_event_
 ```
 
 这些函数不读 Excel、不调用训练、不写原始数据、不修改传入表。
-C 只通过固定适配器调用，**不在页面复制 percentile / C / V / 建议规则**。
+界面只通过固定适配器调用，**不在页面复制 percentile / C / V / 建议规则**。
 
 ## 8. M0 已完成 / 未完成
 
