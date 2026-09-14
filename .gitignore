@@ -9,6 +9,11 @@ DemoPipes属性数据.xlsx
 技术报告.md
 GPT-6 Astra的项目方案.md
 
+# 内部方案文档：含竞赛评分口径与数据集指纹，不推公开仓库
+数据分析报告.md
+项目方案与技术路线.md
+里程碑与分工实施.md
+
 # 产物：按保密要求管理（方案 §9）
 outputs/
 !outputs/.gitkeep
