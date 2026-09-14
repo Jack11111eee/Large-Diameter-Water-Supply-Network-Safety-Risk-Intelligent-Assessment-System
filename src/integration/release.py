@@ -82,10 +82,16 @@ def compute_coordinate_conflicts(pipes):
     return flags, sorted(conflict_nodes)
 
 
+# 决策所需的展示字段：R02 触发条件为 OPSST 原字段（§8.4），
+# 运行状态快照需同时可见 PRESS 是否缺失（§8.5 T03）。
+# 二者属 F2 展示字段，非禁止字段；加入展示包不改变训练白名单（§3.2）。
+DECISION_DISPLAY_FIELDS = ("OPSST", "PRESS")
+
+
 def build_standard_attributes(pipes, *, data_version, run_id):
     """标准展示属性与质量包。不含目标标签、ACCID 或默认历史事件（§13.4）。"""
     wl = loader.load_whitelist()
-    fields = wl["layers"]["F1_base_environment"]
+    fields = list(wl["layers"]["F1_base_environment"]) + list(DECISION_DISPLAY_FIELDS)
     refs = loader.source_refs([c for c in fields if c in wl["source_columns"]])
     conflict_flags, _ = compute_coordinate_conflicts(pipes)
 

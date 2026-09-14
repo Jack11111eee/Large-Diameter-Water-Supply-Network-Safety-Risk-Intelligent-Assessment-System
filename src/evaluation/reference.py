@@ -19,12 +19,16 @@ GRADE_CONFIG_VERSION = "relative_grade_v1"
 
 
 def build_reference_bundle(oof_df, *, reference_id, model_run_id,
-                           grade_config_version=GRADE_CONFIG_VERSION):
+                           data_version, grade_config_version=GRADE_CONFIG_VERSION):
     """从折外预测建立参考分布包。
 
     使用保存的完整精度分数，不先四舍五入（§5.3.1）。
     每份 R 保存 reference_id、prediction_mode、model_run_id、
     管段 ID 集合、数据指纹、完整精度参考分数、grade_config_version。
+
+    data_version 必须由调用方传入真实数据版本：同一发布集合内所有产物
+    的 data_version 必须一致（§13.3）。此前误用 round_id（'seed20260914'），
+    使参考包与其余产物版本不一致，接入方版本校验会拒绝或误报。
     """
     p = oof_df["p"].to_numpy(dtype=float)
     pipe_ids = oof_df["pipe_id"].astype(str).tolist()
@@ -38,7 +42,7 @@ def build_reference_bundle(oof_df, *, reference_id, model_run_id,
 
     return {
         "schema_version": "1.0.0",
-        "data_version": str(oof_df["round_id"].iloc[0]) if len(oof_df) else "unknown",
+        "data_version": data_version,
         "run_id": model_run_id,
         "prediction_mode": "oof_replay",
         "data_kind": "real_standard",

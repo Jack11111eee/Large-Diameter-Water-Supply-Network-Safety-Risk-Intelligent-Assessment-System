@@ -1,0 +1,42 @@
+{
+  "version": "relative_grade_v1",
+  "note": "团队为展示和分级核查制定的相对阈值，不是行业标准、绝对失效概率阈值或已验证的安全界限（方案 §5.3.1）。分级唯一实现在 src/decision/。",
+  "percentile_definition": "100*(count(r<p)+0.5*count(r==p))/n",
+  "min_reference_size": 2,
+  "unavailable_code": "unavailable",
+  "unavailable_display_name": "参考分布不足或无区分度",
+  "levels": [
+    {
+      "code": "L1",
+      "display_name": "相对风险较低",
+      "lower": 0.0,
+      "upper": 80.0,
+      "lower_inclusive": true,
+      "upper_inclusive": false
+    },
+    {
+      "code": "L2",
+      "display_name": "相对风险中等",
+      "lower": 80.0,
+      "upper": 95.0,
+      "lower_inclusive": true,
+      "upper_inclusive": false
+    },
+    {
+      "code": "L3",
+      "display_name": "相对风险较高",
+      "lower": 95.0,
+      "upper": 99.0,
+      "lower_inclusive": true,
+      "upper_inclusive": false
+    },
+    {
+      "code": "L4",
+      "display_name": "相对风险最高",
+      "lower": 99.0,
+      "upper": 100.0,
+      "lower_inclusive": true,
+      "upper_inclusive": true
+    }
+  ]
+}

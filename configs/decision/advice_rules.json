@@ -1,0 +1,165 @@
+{
+  "version": "advice_rules_v1",
+  "note": "团队制定的核查工作流，尚未经过水务单位现场验收；动作仅限核查、收集信息和人工评估，不代表确认失效机理或指令执行（方案 §8.4）。",
+  "execution_order": ["D01", "R01", "R02", "R03", "O01", "D02", "R00"],
+  "order_note": "执行顺序固定，不用此顺序暗示施工紧迫程度。",
+  "high_grade_codes": ["L3", "L4"],
+  "record_fields": [
+    "pipe_id", "rule_id", "rule_version", "advice_mode", "as_of",
+    "trigger_values", "evidence_refs", "suggested_action",
+    "preconditions_to_check", "prohibited_inferences", "action_key",
+    "prediction_run_id", "reference_id", "scenario_id"
+  ],
+  "rules": {
+    "D01": {
+      "rule_id": "D01",
+      "title": "档案核查",
+      "trigger": {
+        "kind": "any_of",
+        "conditions": [
+          {"field": "missing_required_field", "op": "is_true"},
+          {"field": "prediction_invalid", "op": "is_true"},
+          {"field": "coordinate_conflict", "op": "is_true"},
+          {"field": "field_semantic_conflict", "op": "is_true"}
+        ]
+      },
+      "suggested_action": "核对 ID、原字段和坐标来源；相应空间操作标为待核，属性评分有效时仍可单独展示",
+      "preconditions_to_check": [
+        "确认缺失字段在源表是否本就为空",
+        "确认坐标冲突来自源节点还是导出过程"
+      ],
+      "prohibited_inferences": [
+        "不把坐标冲突判断为实际断管",
+        "不因英文 CL 全表常量为每根管段制造独立事故告警"
+      ],
+      "action_key": "record_verification"
+    },
+    "R01": {
+      "rule_id": "R01",
+      "title": "材料与接口核查",
+      "trigger": {
+        "kind": "all_of",
+        "conditions": [
+          {"field": "relative_risk_level", "op": "in", "values_from": "high_grade_codes"},
+          {"kind": "any_of", "conditions": [
+            {"field": "material", "op": "in", "values": ["铸铁管", "自应力管"]},
+            {"field": "joint", "op": "in", "values": ["承插"]}
+          ]}
+        ]
+      },
+      "suggested_action": "核验档案与既有接头/维修记录，再由运维人员判断是否开展材料或接口专项检查；可列明模型材料/接口贡献方向",
+      "preconditions_to_check": [
+        "核对中文管材与接口字段的原始取值",
+        "核对既有接头与维修记录"
+      ],
+      "prohibited_inferences": [
+        "不认定已有腐蚀、裂缝或接口泄漏",
+        "不得自动建议更换后风险降低 X%"
+      ],
+      "action_key": "material_joint_verification"
+    },
+    "R02": {
+      "rule_id": "R02",
+      "title": "运行状态核查",
+      "trigger": {
+        "kind": "any_of",
+        "conditions": [
+          {"field": "opsst", "op": "in", "values": ["偏高", "异常"]}
+        ]
+      },
+      "suggested_action": "标明是未定时快照，核对记录时间、仪表与近期运行记录，转运行人员确认",
+      "preconditions_to_check": [
+        "核对 OPSST 记录时间",
+        "核对仪表与近期运行记录",
+        "确认 PRESS 是否缺失"
+      ],
+      "prohibited_inferences": [
+        "不把记录状态当作当前实时告警",
+        "不自动降压",
+        "缺失 PRESS 时仍可核查状态但不能编造压力值"
+      ],
+      "action_key": "operation_status_verification"
+    },
+    "R03": {
+      "rule_id": "R03",
+      "title": "重要设施核查",
+      "trigger": {
+        "kind": "all_of",
+        "conditions": [
+          {"field": "relative_risk_level", "op": "in", "values_from": "high_grade_codes"},
+          {"field": "facility", "op": "in",
+           "values": ["学校", "医院", "交通枢纽", "政府机关"]}
+        ]
+      },
+      "suggested_action": "确认该设施与管段是否有真实供水关联，并核实业务联系人及保障要求",
+      "preconditions_to_check": [
+        "确认设施与管段的真实供水关联",
+        "核实业务联系人及保障要求"
+      ],
+      "prohibited_inferences": [
+        "“周边有设施”不等于“由该管段供水”",
+        "不估算人数、户数或停水范围"
+      ],
+      "action_key": "critical_facility_verification"
+    },
+    "O01": {
+      "rule_id": "O01",
+      "title": "历史事件复核",
+      "trigger": {
+        "kind": "all_of",
+        "conditions": [
+          {"field": "advice_mode", "op": "equals", "value": "post_event_review"},
+          {"field": "pre_as_of_event_count", "op": "gte", "value": 1}
+        ]
+      },
+      "suggested_action": "列出可追溯记录，请人工检查维修闭环；重复记录还需排查重复工单/事件归并问题",
+      "preconditions_to_check": [
+        "确认事件记录时间均不晚于 as_of",
+        "≥2 条时补充重复事件核查"
+      ],
+      "prohibited_inferences": [
+        "不将同年历史记录传入预测或折外成绩",
+        "不把复发直接解释为修复失败"
+      ],
+      "action_key": "historical_event_review"
+    },
+    "D02": {
+      "rule_id": "D02",
+      "title": "后果信息待核",
+      "trigger": {
+        "kind": "any_of",
+        "conditions": [{"field": "proxy_imputed", "op": "is_true"}]
+      },
+      "suggested_action": "补核缺失/未知设施、道路或管径，展示代理上下情景",
+      "preconditions_to_check": [
+        "定位代填字段并回源核对",
+        "展示 unknown-as-0 与 unknown-as-1 上下情景"
+      ],
+      "prohibited_inferences": [
+        "不把代填 0.5 称作测量结果",
+        "不自动判为低后果"
+      ],
+      "action_key": "consequence_data_verification"
+    },
+    "R00": {
+      "rule_id": "R00",
+      "title": "一般核查",
+      "trigger": {
+        "kind": "none_of",
+        "conditions": [
+          {"field": "triggered_rules", "op": "contains_any",
+           "values": ["D01", "R01", "R02", "R03", "O01", "D02"]}
+        ]
+      },
+      "suggested_action": "保持常规档案与巡检流程；如已进入预算清单，说明其入选目标与数值依据",
+      "preconditions_to_check": [
+        "确认无其他规则触发",
+        "如入选预算清单，记录入选目标与数值依据"
+      ],
+      "prohibited_inferences": [
+        "不输出“无需维护”“不会爆管”或保证安全"
+      ],
+      "action_key": "routine_verification"
+    }
+  }
+}
