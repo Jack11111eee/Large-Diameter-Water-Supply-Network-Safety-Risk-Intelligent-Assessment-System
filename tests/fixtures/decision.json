@@ -1,0 +1,130 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F01_normal",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L1",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.0205,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F01_normal"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F02_unknown_facility",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L3",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.091,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F02_unknown_facility"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F03_coord_conflict",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L1",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.0355,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F03_coord_conflict"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F04_tie_probability",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L4",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.155,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F04_tie_probability"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F05_tie_probability_b",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L4",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.155,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F05_tie_probability_b"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F06_missing_explanation",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L4",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.132,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F06_missing_explanation"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F07_invalid_prediction",
+    "risk_percentile": null,
+    "relative_risk_level": "unavailable",
+    "consequence_proxy": 0.5,
+    "priority_value": null,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F07_invalid_prediction"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F08_diameter_out_of_range",
+    "risk_percentile": 50.0,
+    "relative_risk_level": "L2",
+    "consequence_proxy": 0.5,
+    "priority_value": 0.0475,
+    "scenario_id": "consequence_scenario_v1",
+    "evidence_refs": [
+      "fixture:F08_diameter_out_of_range"
+    ]
+  }
+]

@@ -1,0 +1,253 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F01_normal",
+    "bh": "BH-F01_normal",
+    "attributes": {
+      "pipeage": 12,
+      "material": "球墨铸铁",
+      "joint": "柔性接口",
+      "diameter_mm": 400,
+      "road_type": "次干道",
+      "facility": "居民区",
+      "opsst": "正常",
+      "press_mpa": 0.32
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F02_unknown_facility",
+    "bh": "BH-F02_unknown_facility",
+    "attributes": {
+      "pipeage": 44,
+      "material": "铸铁管",
+      "joint": "承插接口",
+      "diameter_mm": 600,
+      "road_type": "主干道",
+      "facility": null,
+      "opsst": "正常",
+      "press_mpa": 0.41
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": [
+      "proxy_imputed:facility"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F03_coord_conflict",
+    "bh": "BH-F03_coord_conflict",
+    "attributes": {
+      "pipeage": 38,
+      "material": "钢管",
+      "joint": "焊接接口",
+      "diameter_mm": 800,
+      "road_type": "次干道",
+      "facility": "企事业单位",
+      "opsst": "正常",
+      "press_mpa": 0.55
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": [
+      "coordinate_conflict"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F04_tie_probability",
+    "bh": "BH-F04_tie_probability",
+    "attributes": {
+      "pipeage": 47,
+      "material": "铸铁管",
+      "joint": "承插接口",
+      "diameter_mm": 300,
+      "road_type": "支路",
+      "facility": "绿地",
+      "opsst": "偏高",
+      "press_mpa": 0.28
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F05_tie_probability_b",
+    "bh": "BH-F05_tie_probability_b",
+    "attributes": {
+      "pipeage": 47,
+      "material": "自应力管",
+      "joint": "承插接口",
+      "diameter_mm": 300,
+      "road_type": "支路",
+      "facility": "绿地",
+      "opsst": "偏高",
+      "press_mpa": 0.28
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F06_missing_explanation",
+    "bh": "BH-F06_missing_explanation",
+    "attributes": {
+      "pipeage": 61,
+      "material": "铸铁管",
+      "joint": "承插接口",
+      "diameter_mm": 500,
+      "road_type": "主干道",
+      "facility": "医院",
+      "opsst": "异常",
+      "press_mpa": 0.36
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": [
+      "explanation_pending"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F07_invalid_prediction",
+    "bh": "BH-F07_invalid_prediction",
+    "attributes": {
+      "pipeage": 70,
+      "material": "铸铁管",
+      "joint": "承插接口",
+      "diameter_mm": 300,
+      "road_type": "支路",
+      "facility": "学校",
+      "opsst": "正常",
+      "press_mpa": null
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": [
+      "prediction_invalid",
+      "press_missing"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F08_diameter_out_of_range",
+    "bh": "BH-F08_diameter_out_of_range",
+    "attributes": {
+      "pipeage": 33,
+      "material": "球墨铸铁",
+      "joint": "柔性接口",
+      "diameter_mm": 2000,
+      "road_type": "主干道",
+      "facility": "交通枢纽",
+      "opsst": "正常",
+      "press_mpa": 0.48
+    },
+    "source_refs": {
+      "pipeage": "DemoPipes属性数据.xlsx/全部属性/PIPEAGE",
+      "material": "DemoPipes属性数据.xlsx/全部属性/CZ",
+      "joint": "DemoPipes属性数据.xlsx/全部属性/JOINTT",
+      "diameter_mm": "DemoPipes属性数据.xlsx/全部属性/GJ",
+      "road_type": "DemoPipes属性数据.xlsx/全部属性/RDTYPE",
+      "facility": "DemoPipes属性数据.xlsx/全部属性/FAC",
+      "opsst": "DemoPipes属性数据.xlsx/全部属性/OPSST",
+      "press_mpa": "DemoPipes属性数据.xlsx/全部属性/PRESS"
+    },
+    "quality_flags": [
+      "diameter_out_of_range"
+    ]
+  }
+]

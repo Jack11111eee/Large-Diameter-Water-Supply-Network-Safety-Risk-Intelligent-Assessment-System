@@ -1,0 +1,63 @@
+{
+  "whitelist_version": "1.0.0",
+  "note": "依据 项目方案与技术路线.md §3.2 特征分层。训练代码仅能读取本白名单与独立标签，不对多工作表简单合并后使用全部数值列。",
+  "source_columns": {
+    "PIPEAGE": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "管龄(年)\\n(PIPEAGE)", "unit": "year", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "CZ": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "管材\\n(CZ)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "GJ": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "管径(mm)\\n(GJ)", "unit": "mm", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "BURDEP": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "埋深(m)\\n(BURDEP)", "unit": "m", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "QDMS": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "起点埋深(m)\\n(QDMS)", "unit": "m", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "ZDMS": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "埋深描述(m)\\n(ZDMS)", "unit": "m_unverified", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["semantics_unverified"]},
+    "JOINTT": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "接口类型\\n(JOINTT)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "INSTYPE": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "敷设类型\\n(INSTYPE)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "GWLEV": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "地下水位埋深(m)\\n(GWLEV)", "unit": "m", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "GEO": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "地质条件\\n(GEO)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "RDTYPE": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "道路类型\\n(RDTYPE)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["traffic_proxy"]},
+    "BLDENS": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "建筑密度\\n(BLDENS)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "FAC": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "周边设施\\n(FAC)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "LMX": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "路面类型\\n(LMX)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "ISSUB": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "是否支线\\n(ISSUB)", "unit": "bool", "derivation": "raw", "observed_at_status": "snapshot_unknown"},
+    "PRESS": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "运行压力(MPa)\\n(PRESS)", "unit": "MPa", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["not_pre_event"]},
+    "VELOC": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "流速(m/s)\\n(VELOC)", "unit": "m/s", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["not_pre_event"]},
+    "OPSST": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "运行状态\\n(OPSST)", "unit": "category", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["not_pre_event"]},
+    "INSPF": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "巡检频次(次/年)\\n(INSPF)", "unit": "count/year", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["not_pre_event"]},
+    "REPCNT": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "维修次数\\n(REPCNT)", "unit": "count", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["may_be_post_event"]},
+    "REPCO2": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "大修/改造次数\\n(REPCO2)", "unit": "count", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["may_be_post_event"]},
+    "RENYR": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "最近改造年份\\n(RENYR)", "unit": "year", "derivation": "raw_zero_is_missing", "observed_at_status": "snapshot_unknown", "quality_flags": ["zero_means_unrecorded"]}
+  },
+  "layers": {
+    "F0_minimal_baseline": ["PIPEAGE"],
+    "F1_base_environment": ["PIPEAGE", "CZ", "GJ", "BURDEP", "QDMS", "ZDMS", "JOINTT", "INSTYPE", "GWLEV", "GEO", "RDTYPE", "BLDENS", "FAC", "LMX", "ISSUB"],
+    "F2_operational_snapshot": ["PRESS", "VELOC", "OPSST", "INSPF", "REPCNT", "REPCO2", "RENYR"],
+    "F3_topology": ["node_degree", "node_adjacency", "component_size"]
+  },
+  "isolated_fields": {
+    "FLOW": {"reason": "单位疑点未核，排除主模型及漏水量、负荷、成本计算", "flow_unit_status": "unverified"},
+    "LSTINSP": {"reason": "巡检日期衍生时间；不使用系统当前日期，首版关闭"},
+    "JSNF": {"reason": "原始建设年份衍生时间；不以 2026 减管龄补写历史年份"},
+    "SZDL": {"reason": "道路名缺失 1 条；不作为预测特征"},
+    "TRAF": {"reason": "交通负荷与道路类型完全对应，首版预测只保留道路类型"}
+  },
+  "forbidden_fields": {
+    "ACCID": "2024 年爆管次数，同年标签泄漏",
+    "RISK": "属性表综合风险评分，来源未完全明确且属既有风险输出",
+    "source_risk_attribute": "属性表 RISK 命名，仅来源展示",
+    "source_risk_scorecard": "风险评分表综合风险评分，混有标签信息",
+    "基础属性分(30)": "官方评分分项，主模型统一隔离",
+    "水力运行分(25)": "官方评分分项，主模型统一隔离",
+    "运维管理分(25)": "直接包含 ACCID",
+    "周边环境分(20)": "官方评分分项，主模型统一隔离",
+    "综合风险评分": "官方综合评分，对标签 AUC 0.876",
+    "风险等级": "官方等级输出",
+    "count_2024": "2024 年事件次数",
+    "y_2024": "目标标签"
+  },
+  "forbidden_derivations": [
+    "对全年标签计算的最近爆管距离",
+    "KDE",
+    "道路爆管率",
+    "标签型 LISA",
+    "邻居爆管率",
+    "事件表的日期、序号、来源说明等正例专属字段"
+  ]
+}

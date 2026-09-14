@@ -1,0 +1,43 @@
+{
+  "advice_rules_version": "advice_rules_v1",
+  "cases": {
+    "F01_normal": {
+      "note": "正常：L1、OPSST 正常、字段完整，无历史模式 → 预期只有 R00",
+      "expected_triggers": []
+    },
+    "F02_unknown_facility": {
+      "note": "未知设施：FAC 未知，代理采用参考值 0.5 → D02，C 不归零（真实数据零缺失，人工构造）",
+      "expected_triggers": [
+        "D02"
+      ]
+    },
+    "F03_coord_conflict": {
+      "note": "坐标冲突：源节点坐标存在冲突，属性评分有效 → D01；空间结果待核",
+      "expected_triggers": [
+        "D01"
+      ]
+    },
+    "F04_tie_probability": {
+      "note": "相同概率：管龄并列（真实数据最大并列组 765），分级必须同分同级",
+      "expected_triggers": []
+    },
+    "F05_tie_probability_b": {
+      "note": "与 F04 概率完全相同，用于验证同分同级与稳定并列排序",
+      "expected_triggers": []
+    },
+    "F06_missing_explanation": {
+      "note": "缺失解释：解释未就绪必须显式 unavailable，不得用别的模型顶替（§13.5）",
+      "expected_triggers": []
+    },
+    "F07_invalid_prediction": {
+      "note": "无效预测：p 缺失 → D01，相对等级 unavailable；不得因代填触发 R01/R03",
+      "expected_triggers": [
+        "D01"
+      ]
+    },
+    "F08_diameter_out_of_range": {
+      "note": "管径越界：真实数据范围恰为 300–1600，无越界值，人工构造；不自动外推",
+      "expected_triggers": []
+    }
+  }
+}

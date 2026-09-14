@@ -1,0 +1,24 @@
+# 原始数据：只读，不纳入版本控制（方案 §9）
+DemoPipes属性数据.xlsx
+历史爆管记录_2024.xlsx
+项目说明书.docx
+附件*.docx
+.~*.docx
+
+# 失效文档：不纳入版本控制
+技术报告.md
+GPT-6 Astra的项目方案.md
+
+# 产物：按保密要求管理（方案 §9）
+outputs/
+!outputs/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# macOS
+.DS_Store

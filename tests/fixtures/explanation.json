@@ -1,0 +1,214 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F01_normal",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F02_unknown_facility",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F03_coord_conflict",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F04_tie_probability",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F05_tie_probability_b",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F06_missing_explanation",
+    "model_id": "B2_logreg",
+    "base_value": null,
+    "contributions": [],
+    "scale": "log_odds",
+    "status": "unavailable",
+    "quality_flags": [
+      "explanation_pending"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F07_invalid_prediction",
+    "model_id": "B2_logreg",
+    "base_value": null,
+    "contributions": [],
+    "scale": "log_odds",
+    "status": "unavailable",
+    "quality_flags": [
+      "explanation_pending"
+    ]
+  },
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "pipe_id": "SYN-F08_diameter_out_of_range",
+    "model_id": "B2_logreg",
+    "base_value": -2.1,
+    "contributions": [
+      {
+        "feature": "pipeage",
+        "value": 0.83,
+        "direction": "positive"
+      },
+      {
+        "feature": "material",
+        "value": 0.41,
+        "direction": "positive"
+      },
+      {
+        "feature": "press_mpa",
+        "value": -0.12,
+        "direction": "negative"
+      }
+    ],
+    "scale": "log_odds",
+    "status": "ok",
+    "quality_flags": []
+  }
+]

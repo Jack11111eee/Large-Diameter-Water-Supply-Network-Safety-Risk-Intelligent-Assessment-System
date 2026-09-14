@@ -1,0 +1,31 @@
+[
+  {
+    "schema_version": "1.0.0",
+    "data_version": "fixture-v1",
+    "run_id": "fixture-run",
+    "prediction_mode": "oof_replay",
+    "data_kind": "synthetic_fixture",
+    "reference_id": "fixture-ref-v1",
+    "model_run_id": "B2_logreg",
+    "grade_config_version": "relative_grade_v1",
+    "pipe_ids": [
+      "SYN-F01_normal",
+      "SYN-F02_unknown_facility",
+      "SYN-F03_coord_conflict",
+      "SYN-F04_tie_probability",
+      "SYN-F05_tie_probability_b",
+      "SYN-F06_missing_explanation",
+      "SYN-F08_diameter_out_of_range"
+    ],
+    "scores": [
+      0.041,
+      0.182,
+      0.071,
+      0.31,
+      0.31,
+      0.264,
+      0.095
+    ],
+    "data_fingerprint": "fixture-fingerprint"
+  }
+]
