@@ -12,6 +12,7 @@ import pytest
 
 from src.contracts import validate_package
 from src.evaluation import split
+from src.explain import artifacts as explain_artifacts
 from src.integration import pipeline
 
 N_PIPES = 7288
@@ -207,3 +208,54 @@ def test_event_view_matches_the_label_counts(grouped):
 def test_event_view_as_of_is_explicit(grouped):
     _, _, f = grouped
     assert {r["as_of"] for r in f["event_view.json"]} == {pipeline.EVENT_AS_OF}
+
+
+# ---- 解释（§7.1） ----
+
+def test_explanation_is_contract_rows_covering_all_pipes(grouped):
+    _, _, f = grouped
+    rows = f["explanation.json"]
+    validate_package("explanation", rows)
+    assert len(rows) == N_PIPES
+    assert {r["status"] for r in rows} == {"ok"}
+
+
+def test_explanation_is_log_odds_not_probability(grouped):
+    """树/线性模型的 SHAP 解释在 log-odds 尺度，不得写成概率百分点（§7.1）。"""
+    _, _, f = grouped
+    rows = f["explanation.json"]
+    assert {r["scale"] for r in rows} == {"log_odds"}
+    for r in rows:
+        assert "explains_mean_raw_score_not_final_probability" in r["quality_flags"]
+
+
+def test_explanation_additivity_holds_on_real_data(grouped):
+    """加和核验在真实 7,288 条上通过（§7.1）。"""
+    _, _, f = grouped
+    rows = f["explanation.json"]
+    assert not explain_artifacts.verify_rows_additivity(rows)
+    worst = max(r["additivity_max_abs_error"] for r in rows)
+    assert worst < 1e-9
+
+
+def test_explanation_explains_the_released_predictions(grouped):
+    """解释的模型与尺度必须与已发布预测同源，不得用别的模型顶替（§13.5）。"""
+    _, _, f = grouped
+    pred_models = {r["model_id"] for r in f["predictions.json"]}
+    expl_models = {r["model_id"] for r in f["explanation.json"]}
+    assert expl_models == pred_models
+    assert {r["run_id"] for r in f["explanation.json"]} == \
+        {r["run_id"] for r in f["predictions.json"]}
+
+
+def test_adapter_resolves_explanations_for_every_pipe(grouped, monkeypatch):
+    """端到端：适配器把解释接到管段视图上，全部可用（§13.5、§13.6）。"""
+    from app import adapter
+
+    out, _, _ = grouped
+    monkeypatch.setenv(adapter.ENV_PACKAGE_DIR, str(out))
+    package = adapter.load_package_set(allow_fallback=False)
+    assert len(package.pipes) == N_PIPES
+    assert {p.explanation.status for p in package.pipes} == {"ok"}
+    assert all(p.explanation.contributions for p in package.pipes)
+    assert all(p.explanation.scale == "log_odds" for p in package.pipes)

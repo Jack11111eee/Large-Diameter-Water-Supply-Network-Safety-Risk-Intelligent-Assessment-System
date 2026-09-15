@@ -11,6 +11,7 @@ from pathlib import Path
 from src.contracts import validate_package
 from src.data import loader
 from src.evaluation import metrics, protocol, reference, runner, split
+from src.explain import artifacts as explain_artifacts
 from src.evaluation.metrics import aggregate_all
 from src.integration import fullfit as fullfit_mod
 from src.integration import release
@@ -57,9 +58,11 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
         model_spec=None if scheme == "random" else {
             "split_scheme": scheme, "table_fingerprint": table_fp})
 
-    # 折外预测（固定划分，不重算）
-    oof = runner.run_oof(pipes, counts, model_name=MODEL_ID, folds=folds,
-                         seed=SEED, groups=groups, split_scheme=scheme)
+    # 折外预测（固定划分，不重算）。保留每折已拟合的模型与校准器，
+    # 供解释复用，避免重新拟合导致解释与已发布预测不一致（§7.1）。
+    oof, fold_state = runner.run_oof(
+        pipes, counts, model_name=MODEL_ID, folds=folds, seed=SEED,
+        groups=groups, split_scheme=scheme, return_fold_state=True)
 
     # 四类聚合成绩
     scores = aggregate_all(oof.y_true, oof.p, oof.pipe_id, oof.outer_fold,
@@ -79,6 +82,15 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
         pipes, events, data_version=data_version, run_id=run_id,
         as_of=EVENT_AS_OF)
 
+    # 解释（§7.1）：解释的是本次发布的折外预测，尺度为 log-odds 原始分数
+    expl_rows = explain_artifacts.build_explanation_rows(
+        pipes, oof, fold_state, data_version=data_version, run_id=run_id,
+        seed=SEED)
+    broken = explain_artifacts.verify_rows_additivity(expl_rows)
+    if broken:
+        # 加和核验不过就不发布解释：宁可整包 unavailable，也不发对不上的归因
+        raise ValueError(f"解释加和核验未通过：{broken[:5]}（§7.1）")
+
     # 成绩扁平化为契约行（§13.4 `evaluation` 产物）
     ev_rows = metrics.flatten_evaluation(scores, {
         "schema_version": release.SCHEMA_VERSION,
@@ -91,7 +103,8 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
     # 契约校验
     for name, rows in [("standard_attributes", std), ("geometry", geom),
                        ("predictions", preds), ("evaluation", ev_rows),
-                       ("event_view", events_view)]:
+                       ("event_view", events_view),
+                       ("explanation", expl_rows)]:
         validate_package(name, rows)
     validate_package("reference_bundle", [bundle])
 
@@ -115,7 +128,7 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
     manifest = release.build_manifest(
         {"standard_attributes": std, "geometry": geom, "predictions": preds,
          "reference_bundle": [bundle], "evaluation": ev_rows,
-         "event_view": events_view},
+         "event_view": events_view, "explanation": expl_rows},
         data_version=data_version, run_id=run_id, model_id=MODEL_ID, seed=SEED,
         configs=protocol.config_versions(),
         split=split_meta,
@@ -130,6 +143,7 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
     release.save_json(manifest, out_dir / "manifest.json")
     release.save_json(ev_rows, out_dir / "evaluation.json")
     release.save_json(events_view, out_dir / "event_view.json")
+    release.save_json(expl_rows, out_dir / "explanation.json")
     # 划分表（A 内部使用，不进入普通发布包）
     split.save_split(table, out_dir / "labels_and_splits.csv")
 
