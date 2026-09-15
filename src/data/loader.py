@@ -65,24 +65,68 @@ def make_labels(pipes, events):
     return counts, counts.gt(0).astype(int)
 
 
-def feature_matrix(pipes, layer):
-    """按白名单层级导出训练矩阵。仅含该层字段，禁止字段不进入（§3.4）。"""
+LAYER_SEPARATOR = "+"
 
+
+def resolve_layer(spec):
+    """解析特征层规格，支持 '+' 组合（§3.2）。
+
+    按声明顺序拼接并去重；单一层名的行为与原来一致。
+    """
     wl = load_whitelist()
-    if layer not in wl["layers"]:
-        raise KeyError(f"未知特征层 {layer!r}；可用: {sorted(wl['layers'])}")
+    layers = wl["layers"]
+    names = [s for s in str(spec).split(LAYER_SEPARATOR) if s]
+    if not names:
+        raise KeyError(f"空特征层规格 {spec!r}")
+    unknown = [n for n in names if n not in layers]
+    if unknown:
+        raise KeyError(f"未知特征层 {unknown}；可用: {sorted(layers)}")
 
-    cols = wl["layers"][layer]
-    forbidden = set(wl["forbidden_fields"])
-    overlap = set(cols) & forbidden
+    cols = []
+    for n in names:
+        for c in layers[n]:
+            if c not in cols:
+                cols.append(c)
+
+    overlap = set(cols) & set(wl["forbidden_fields"])
     if overlap:
-        raise ValueError(f"白名单层 {layer} 含禁止字段: {sorted(overlap)}")
+        raise ValueError(f"白名单层 {spec} 含禁止字段: {sorted(overlap)}")
+    return cols
+
+
+def feature_matrix(pipes, layer):
+    """按白名单层级导出训练矩阵。仅含该层字段，禁止字段不进入（§3.4）。
+
+    支持 '+' 组合层；F3 拓扑列由节点 ID 派生后并入（§3.2）。
+    """
+    cols = resolve_layer(layer)
 
     missing = [c for c in cols if c not in pipes.columns]
     if missing:
-        raise KeyError(f"白名单层 {layer} 引用了不存在的列: {missing}")
+        derivable = set(load_whitelist()["layers"]["F3_topology"])
+        if not set(missing) <= derivable:
+            raise KeyError(f"白名单层 {layer} 引用了不存在的列: {missing}")
+        from src.data.topology import derive_topology_features
 
-    return pipes[cols].copy()
+        derived = derive_topology_features(pipes)
+        frame = pipes.assign(**{c: derived[c] for c in missing})
+    else:
+        frame = pipes
+
+    return frame[cols].copy()
+
+
+def numeric_fields():
+    """白名单声明的数值字段（§3.2）。供预处理区分数值与类别。"""
+    return frozenset(load_whitelist()["numeric_fields"])
+
+
+def feature_group(field):
+    """字段的解释分组（§7.1）。"""
+    for name, fields in load_whitelist()["feature_groups"].items():
+        if field in fields:
+            return name
+    return "未分组"
 
 
 def assert_no_forbidden_columns(columns):

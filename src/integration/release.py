@@ -28,29 +28,10 @@ def _fingerprint(payload):
 
 
 def compute_components(pipes):
-    """数字 ID 图的连通分量（§4）。每个 pipe_id 为独立边，无向多重图。"""
-    parent = {}
+    """数字 ID 图的连通分量（§4）。实现见 src.data.topology。"""
+    from src.data.topology import component_ids
 
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    for u, v in zip(pipes["QSJD"], pipes["JSJDID"]):
-        parent.setdefault(u, u)
-        parent.setdefault(v, v)
-        ru, rv = find(u), find(v)
-        if ru != rv:
-            parent[ru] = rv
-
-    roots, comp = {}, []
-    for u in pipes["QSJD"]:
-        r = find(u)
-        if r not in roots:
-            roots[r] = len(roots)
-        comp.append(roots[r])
-    return comp
+    return component_ids(pipes)
 
 
 def compute_coordinate_conflicts(pipes):
