@@ -207,9 +207,16 @@ def data_version_of(pipe_ids):
     })[:16]
 
 
-def run_id_of(model_id, seed, data_version):
-    return _fingerprint({"model": model_id, "seed": seed,
-                         "data": data_version})[:16]
+def run_id_of(model_id, seed, data_version, *, model_spec=None):
+    """运行标识。
+
+    model_spec 省略时与历史口径逐字节一致；给出时把结构、候选、参数网格、
+    校准策略与划分指纹一并纳入，避免不同配置撞同一 run_id（§13.3）。
+    """
+    payload = {"model": model_id, "seed": seed, "data": data_version}
+    if model_spec is not None:
+        payload["spec"] = model_spec
+    return _fingerprint(payload)[:16]
 
 
 def save_json(rows, path):

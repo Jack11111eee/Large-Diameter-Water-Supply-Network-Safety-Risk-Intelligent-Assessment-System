@@ -19,7 +19,8 @@ GRADE_CONFIG_VERSION = "relative_grade_v1"
 
 
 def build_reference_bundle(oof_df, *, reference_id, model_run_id,
-                           data_version, grade_config_version=GRADE_CONFIG_VERSION):
+                           data_version, grade_config_version=GRADE_CONFIG_VERSION,
+                           prediction_mode="oof_replay"):
     """从折外预测建立参考分布包。
 
     使用保存的完整精度分数，不先四舍五入（§5.3.1）。
@@ -44,7 +45,7 @@ def build_reference_bundle(oof_df, *, reference_id, model_run_id,
         "schema_version": "1.0.0",
         "data_version": data_version,
         "run_id": model_run_id,
-        "prediction_mode": "oof_replay",
+        "prediction_mode": prediction_mode,
         "data_kind": "real_standard",
         "reference_id": reference_id,
         "model_run_id": model_run_id,

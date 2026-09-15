@@ -12,10 +12,12 @@ from src.contracts import validate_package
 from src.data import loader
 from src.evaluation import reference, runner, split
 from src.evaluation.metrics import aggregate_all
+from src.integration import fullfit as fullfit_mod
 from src.integration import release
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 OUT_DIR = ROOT / "outputs" / "release"
+FULL_FIT_OUT_DIR = ROOT / "outputs" / fullfit_mod.FULL_FIT_DIR_NAME
 
 MODEL_ID = "B2_age_logreg"
 SEED = 20260914
@@ -85,6 +87,54 @@ def build_all(out_dir=OUT_DIR):
         "manifest": manifest,
         "evaluation": scores,
         "reference_usable": bundle["usable"],
+    }
+
+
+def build_full_fit(out_dir=FULL_FIT_OUT_DIR, *, structure="F1_base_environment"):
+    """全量拟合发布包（§6.5）。
+
+    独立目录、独立参考包；**不产出成绩表**——全量拟合在训练标签上的
+    分数不得进入成绩表，演示默认使用折外回放。
+    """
+    out_dir = Path(out_dir)
+    pipes = loader.load_attributes()
+    counts, _ = loader.make_labels(pipes, loader.load_events())
+
+    pipe_ids = pipes["ID"].astype(str).tolist()
+    data_version = release.data_version_of(pipe_ids)
+    fitted = fullfit_mod.fit_full(pipes, counts, structure=structure)
+    run_id = release.run_id_of(
+        fitted["model_id"], SEED, data_version,
+        model_spec={
+            "structure": structure,
+            "mode": fullfit_mod.NO_SCORE_TABLE["prediction_mode"],
+            "training_fingerprint": fitted["training_fingerprint"],
+        })
+
+    preds = fullfit_mod.build_full_fit_predictions(
+        fitted, pipes, data_version=data_version, run_id=run_id)
+    bundle = fullfit_mod.build_full_fit_reference(
+        fitted, pipes, data_version=data_version, run_id=run_id)
+
+    validate_package("predictions", preds)
+    validate_package("reference_bundle", [bundle])
+
+    manifest = release.build_manifest(
+        {"predictions": preds, "reference_bundle": [bundle]},
+        data_version=data_version, run_id=run_id,
+        model_id=fitted["model_id"], seed=SEED)
+
+    release.save_json(preds, out_dir / "predictions.json")
+    release.save_json([bundle], out_dir / "reference_bundle.json")
+    release.save_json(manifest, out_dir / "manifest.json")
+    release.save_json(fullfit_mod.NO_SCORE_TABLE, out_dir / "full_fit_scores.json")
+
+    return {
+        "data_version": data_version,
+        "run_id": run_id,
+        "n_pipes": len(pipes),
+        "manifest": manifest,
+        "training_fingerprint": fitted["training_fingerprint"],
     }
 
 
