@@ -138,7 +138,7 @@ def build_predictions(oof_df, *, data_version, run_id):
     """预测包。不含 y_true（§13.4）。"""
     rows = []
     for r in oof_df.itertuples():
-        flags = []
+        flags = list(getattr(r, "quality_flags", []) or [])
         if not np.isfinite(r.p):
             flags.append("prediction_invalid")
         rows.append({
