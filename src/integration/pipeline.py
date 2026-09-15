@@ -24,6 +24,9 @@ FULL_FIT_OUT_DIR = ROOT / "outputs" / fullfit_mod.FULL_FIT_DIR_NAME
 MODEL_ID = "B2_age_logreg"
 SEED = 20260914
 
+# 事件视图的截止日（§8.5）。显式常量：发布时不隐式取系统当前日。
+EVENT_AS_OF = "2024-12-31"
+
 
 def build_all(out_dir=OUT_DIR, *, scheme="random"):
     """构建一个发布集合。
@@ -72,6 +75,9 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
                                             run_id=run_id)
     geom = release.build_geometry(pipes, data_version=data_version, run_id=run_id)
     preds = release.build_predictions(oof, data_version=data_version, run_id=run_id)
+    events_view = release.build_event_view(
+        pipes, events, data_version=data_version, run_id=run_id,
+        as_of=EVENT_AS_OF)
 
     # 成绩扁平化为契约行（§13.4 `evaluation` 产物）
     ev_rows = metrics.flatten_evaluation(scores, {
@@ -84,7 +90,8 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
 
     # 契约校验
     for name, rows in [("standard_attributes", std), ("geometry", geom),
-                       ("predictions", preds), ("evaluation", ev_rows)]:
+                       ("predictions", preds), ("evaluation", ev_rows),
+                       ("event_view", events_view)]:
         validate_package(name, rows)
     validate_package("reference_bundle", [bundle])
 
@@ -107,7 +114,8 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
 
     manifest = release.build_manifest(
         {"standard_attributes": std, "geometry": geom, "predictions": preds,
-         "reference_bundle": [bundle], "evaluation": ev_rows},
+         "reference_bundle": [bundle], "evaluation": ev_rows,
+         "event_view": events_view},
         data_version=data_version, run_id=run_id, model_id=MODEL_ID, seed=SEED,
         configs=protocol.config_versions(),
         split=split_meta,
@@ -121,6 +129,7 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
     release.save_json([bundle], out_dir / "reference_bundle.json")
     release.save_json(manifest, out_dir / "manifest.json")
     release.save_json(ev_rows, out_dir / "evaluation.json")
+    release.save_json(events_view, out_dir / "event_view.json")
     # 划分表（A 内部使用，不进入普通发布包）
     split.save_split(table, out_dir / "labels_and_splits.csv")
 

@@ -1,6 +1,6 @@
 """Streamlit 入口（§9）。启动：`streamlit run app/main.py`。
 
-本文件只负责：装载包 → 显示页级徽章 → 分发到三个页面。
+本文件只负责：装载包 → 显示页级徽章 → 分发到各页面。
 不包含任何业务计算；所有数值来自 `app.adapter` 的视图对象。
 """
 
@@ -15,12 +15,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app import adapter, components, theme  # noqa: E402
-from app.views import detail, overview, resources  # noqa: E402
+from app.views import detail, overview, post_event, resources  # noqa: E402
 
 PAGES = {
     "风险总览与清单": overview.render,
     "管段详情": detail.render,
     "资源清单": resources.render,
+    "事后运维复核": post_event.render,
 }
 
 
@@ -28,7 +29,7 @@ def main():
     st.set_page_config(page_title="大口径供水管网安全风险智能评估与决策",
                        page_icon="🛠", layout="wide")
     st.title("大口径供水管网安全风险智能评估与决策")
-    st.caption("M1 界面范围：风险总览与清单、管段详情、资源清单。"
+    st.caption("界面范围：风险总览与清单、管段详情、资源清单、事后运维复核。"
                "数据与实验审计页留待后续里程碑。")
 
     try:

@@ -183,3 +183,27 @@ def test_grade_distribution_covers_every_pipe(grouped):
     _, _, f = grouped
     dist = Counter(r["prediction_mode"] for r in f["predictions.json"])
     assert dist == {"oof_replay": N_PIPES}
+
+
+# ---- 事件视图（§8.5） ----
+
+def test_event_view_is_contract_rows_covering_all_pipes(grouped):
+    _, _, f = grouped
+    rows = f["event_view.json"]
+    validate_package("event_view", rows)
+    assert len(rows) == N_PIPES
+
+
+def test_event_view_matches_the_label_counts(grouped):
+    """事件视图的截止日计数必须与标签口径一致（§3.3 一管一行）。"""
+    _, _, f = grouped
+    rows = f["event_view.json"]
+    assert sum(1 for r in rows if r["event_count"] > 0) == 251
+    assert sum(r["event_count"] for r in rows) == 262
+    # 保留原始事件日期，使决策模块可在任意合法 as_of 下重算
+    assert sum(len(r["events"]) for r in rows) == 262
+
+
+def test_event_view_as_of_is_explicit(grouped):
+    _, _, f = grouped
+    assert {r["as_of"] for r in f["event_view.json"]} == {pipeline.EVENT_AS_OF}

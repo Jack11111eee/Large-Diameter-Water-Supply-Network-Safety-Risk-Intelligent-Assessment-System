@@ -38,6 +38,7 @@ FILES = {
     "decision": "decision.json",
     "reference_bundle": "reference_bundle.json",
     "evaluation": "evaluation.json",
+    "event_view": "event_view.json",
     "manifest": "manifest.json",
 }
 
@@ -46,7 +47,8 @@ REQUIRED_PRODUCTS = ("standard_attributes", "predictions")
 
 # 走契约校验的列表型产物
 LIST_PRODUCTS = ("standard_attributes", "geometry", "predictions",
-                 "explanation", "decision", "reference_bundle", "evaluation")
+                 "explanation", "decision", "reference_bundle", "evaluation",
+                 "event_view")
 
 # 必须一致的包级字段：同一发布包的标识与口径。
 # data_version 不列入：M0 核心的参考分布包以 round_id 记 data_version，
@@ -66,6 +68,9 @@ FIELD_ALIASES = {
 }
 # 反向：字段代码 → 夹具别名
 FIELD_CODES = {v: k for k, v in FIELD_ALIASES.items()}
+
+# 事后运维复核的默认截止日（§8.5）。显式常量：界面不隐式取系统当前日。
+DEFAULT_AS_OF = "2024-12-31"
 
 LEVEL_UNAVAILABLE = "unavailable"
 
@@ -181,6 +186,10 @@ class DecisionView:
     # 以不同 K / 目标重跑 prioritize() 的回调。界面改预算时调用它，
     # 而不是在页面里重排或重算（§13.1、§13.4）。
     selection_fn: object = None
+    # 事后运维入口：post_event_fn(as_of) -> 建议记录列表。与 selection_fn 同样
+    # 只是转发，业务全在决策模块内（§8.5）。事后建议与预测侧建议分开存放，
+    # 不互相覆盖。
+    post_event_fn: object = None
 
     @property
     def covered_ids(self) -> frozenset:
@@ -192,6 +201,12 @@ class DecisionView:
             return None
         return self.selection_fn(k, objective)
 
+    def post_event(self, as_of: str):
+        """按给定截止日取事后运维建议。无回调时返回 None（界面据此显示空态）。"""
+        if self.post_event_fn is None:
+            return None
+        return self.post_event_fn(as_of)
+
 
 @dataclass(frozen=True)
 class PackageSet:
@@ -201,6 +216,7 @@ class PackageSet:
     pipes: tuple
     reference_bundle: dict | None
     evaluation: list | None
+    event_view: list | None
     manifest: dict | None
     decision: DecisionView
 
@@ -389,35 +405,41 @@ def _advice_records(result, module):
     return {}
 
 
+def _module_views(attrs_rows):
+    """决策模块的输入视图：只搬运源包字段，不派生任何量（§13.1）。"""
+    return [{"pipe_id": r["pipe_id"], "attributes": r["attributes"],
+             "quality_flags": list(r.get("quality_flags") or ())}
+            for r in attrs_rows]
+
+
 def _call_decision_module(module, attrs_rows, predictions, reference_bundle,
-                          config_dir: Path):
+                          config_dir: Path, event_view=None):
     """按 §13.4 的冻结签名调用决策模块。
 
-    返回 (rows, advice, priority_result, selection_fn, reason)。
+    返回 (rows, advice, priority_result, selection_fn, post_event_fn, reason)。
     只调用，不重算：任何一步失败都整体退回冻结决策包，绝不在界面里补算。
     """
     grade = getattr(module, "grade", None)
     if grade is None:
-        return None, {}, None, None, "决策模块未提供 grade()"
+        return None, {}, None, None, None, "决策模块未提供 grade()"
 
     try:
         grades = grade(predictions, reference_bundle,
                        _grade_settings(module, config_dir))
     except Exception as exc:
-        return None, {}, None, None, (f"决策模块 grade() 调用失败"
-                                      f"（{type(exc).__name__}: {exc}）")
+        return None, {}, None, None, None, (f"决策模块 grade() 调用失败"
+                                            f"（{type(exc).__name__}: {exc}）")
     grade_rows, why = _as_records(grades, "grade()")
     if grade_rows is None:
-        return None, {}, None, None, why
+        return None, {}, None, None, None, why
+
+    views = _module_views(attrs_rows)
 
     # 后果代理 C 与优先值 V 只能来自 prioritize()（§8.1、§13.1）
     prioritize = getattr(module, "prioritize", None)
     priority_result, priority_rows = None, []
     selection_fn = None
     if prioritize is not None:
-        views = [{"pipe_id": r["pipe_id"], "attributes": r["attributes"],
-                  "quality_flags": list(r.get("quality_flags") or ())}
-                 for r in attrs_rows]
         scenario = _config_loader(module, "load_scenario_config",
                                   config_dir, "scenario_config.json")
 
@@ -428,14 +450,27 @@ def _call_decision_module(module, attrs_rows, predictions, reference_bundle,
         try:
             priority_result = run_prioritize()
         except Exception as exc:
-            return None, {}, None, None, (f"决策模块 prioritize() 调用失败"
-                                          f"（{type(exc).__name__}: {exc}）")
+            return None, {}, None, None, None, (f"决策模块 prioritize() 调用失败"
+                                                f"（{type(exc).__name__}: {exc}）")
         selection_fn = run_prioritize
         records = (priority_result or {}).get("records") if isinstance(priority_result, dict) else None
         if isinstance(records, dict):
             priority_rows = list(records.values())
         elif isinstance(records, list):
             priority_rows = records
+
+    # 事后运维入口（§8.5）：独立闭包，界面按需以显式 as_of 调用。
+    # 决策模块自己校验 as_of 与事件视图的一致性，界面不代它判断。
+    post_event_fn = None
+    advise_post_event = getattr(module, "advise_post_event", None)
+    if advise_post_event is not None:
+        rules = _config_loader(module, "load_advice_rules",
+                               config_dir, "advice_rules.json")
+
+        def run_post_event(as_of):
+            return advise_post_event(views, event_view, as_of, rules)
+
+        post_event_fn = run_post_event
 
     # 合并：分级给等级与百分位，排序给 C、V 与情景版本
     merged = {r["pipe_id"]: dict(r) for r in grade_rows}
@@ -445,7 +480,8 @@ def _call_decision_module(module, attrs_rows, predictions, reference_bundle,
     advice = _advice_records(grades, module)
     if not advice and priority_result is not None:
         advice = _advice_records(priority_result, module)
-    return list(merged.values()), advice, priority_result, selection_fn, ""
+    return list(merged.values()), advice, priority_result, selection_fn, \
+        post_event_fn, ""
 
 
 def _load_decision_view(payloads: dict, directory: Path, attrs_rows: list,
@@ -453,8 +489,10 @@ def _load_decision_view(payloads: dict, directory: Path, attrs_rows: list,
                         *, allow_fixture: bool = True) -> DecisionView:
     module, reason = _try_import_decision()
     if module is not None:
-        rows, advice, priority_result, selection_fn, why = _call_decision_module(
-            module, attrs_rows, predictions, reference_bundle, DECISION_CONFIG_DIR)
+        rows, advice, priority_result, selection_fn, post_event_fn, why = \
+            _call_decision_module(
+                module, attrs_rows, predictions, reference_bundle,
+                DECISION_CONFIG_DIR, event_view=payloads.get("event_view"))
         if rows is not None:
             return DecisionView(
                 source="decision_module",
@@ -463,6 +501,7 @@ def _load_decision_view(payloads: dict, directory: Path, attrs_rows: list,
                 advice=advice,
                 priority_result=priority_result,
                 selection_fn=selection_fn,
+                post_event_fn=post_event_fn,
             )
         reason = why
 
@@ -661,6 +700,7 @@ def _load_from(directory: Path, *, allow_decision_fixture: bool = True) -> Packa
         pipes=pipes,
         reference_bundle=reference_bundle,
         evaluation=payloads.get("evaluation"),
+        event_view=payloads.get("event_view"),
         manifest=payloads.get("manifest"),
         decision=decision,
     )

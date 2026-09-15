@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from src.data import loader
 
@@ -154,6 +155,35 @@ def build_predictions(oof_df, *, data_version, run_id):
             "fold": int(r.outer_fold),
             "calibrated": bool(r.calibrated),
             "quality_flags": flags,
+        })
+    return rows
+
+
+def build_event_view(pipes, events, *, data_version, run_id, as_of):
+    """事件视图（§8.5、§13.4）。
+
+    事后运维复核的输入：每条管段在截止日之前的事件。保留原始事件日期，
+    使决策模块能在任意合法 as_of 下重算，而不是把某个截止日的计数写死。
+    as_of 必须由调用方显式传入，不隐式取系统当前日。
+    """
+    by_pipe = {}
+    for pipe_id, date in zip(events["管道ID"], events["爆管日期"]):
+        key = str(pipe_id)
+        by_pipe.setdefault(key, []).append(pd.Timestamp(date).strftime("%Y-%m-%d"))
+
+    rows = []
+    for pid in pipes["ID"].astype(str):
+        dates = sorted(by_pipe.get(pid, []))
+        rows.append({
+            "schema_version": SCHEMA_VERSION,
+            "data_version": data_version,
+            "run_id": run_id,
+            "prediction_mode": "oof_replay",
+            "data_kind": "real_standard",
+            "pipe_id": pid,
+            "event_count": sum(1 for d in dates if d <= as_of),
+            "as_of": as_of,
+            "events": dates,
         })
     return rows
 

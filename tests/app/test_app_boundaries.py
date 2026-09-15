@@ -184,8 +184,8 @@ def test_streamlit_imports_are_confined():
 
 
 def test_views_expose_render_entrypoints():
-    """三个 M1 页面各有一个 render(package, mode) 入口。"""
-    for name in ("overview", "detail", "resources"):
+    """每个页面各有一个 render(package, mode) 入口。"""
+    for name in ("overview", "detail", "resources", "post_event"):
         tree = _tree(APP / "views" / f"{name}.py")
         funcs = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
         assert "render" in funcs, f"views/{name}.py 缺少 render 入口"

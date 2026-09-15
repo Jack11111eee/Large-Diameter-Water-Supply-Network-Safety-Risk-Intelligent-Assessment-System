@@ -28,7 +28,7 @@ APP_PACKAGE_DIR=/path/to/package python3 -m streamlit run app/main.py
 回退只在"产物不存在"时发生。版本不匹配、重复 `pipe_id`、缺失字段、表间 ID 集合不一致
 一律拒绝接入并说明原因（§13.3）。
 
-## 页面（M1 三页）
+## 页面
 
 1. **风险总览与清单** — 概率、相对等级、固定百分位、本地坐标示意（源坐标直线 / 纯拓扑布局切换）、
    分量与坐标冲突标记、风险清单。
@@ -36,6 +36,8 @@ APP_PACKAGE_DIR=/path/to/package python3 -m streamlit run app/main.py
    后果代理、优先值、规则触发依据与建议动作。
 3. **资源清单** — 预算 K、目标切换（p / C / V）、独立按 p 视图（标注未进入当前目标清单的管段）、
    L3/L4 视图、参数版本、导出。
+4. **事后运维复核** — 默认**关闭**；开启后以显式 `as_of`（不取系统当前日）调用决策模块的
+   `advise_post_event()`。事后建议是独立清单，不改变 p、等级、C、V 或预测清单（§8.5）。
 
 页级徽章：预测模式（`oof_replay` / `full_fit` / `scenario`）与数据来源
 （`real_standard` / `synthetic_fixture`）。
@@ -53,7 +55,7 @@ APP_PACKAGE_DIR=/path/to/package python3 -m streamlit run app/main.py
 | `theme.py` | 颜色与 Plotly 版式令牌 |
 | `sketch.py` | 本地坐标 / 拓扑示意图，只做呈现 |
 | `components.py` | 共用展示组件（徽章、空 / 错误状态、属性表、解释面板） |
-| `views/` | 三个 M1 页面 |
+| `views/` | 页面模块，每个导出一个 `render(package, mode)` |
 | `main.py` | 入口：装载 → 徽章 → 分发到页面 |
 
 > 页面模块放在 `views/` 而非 `pages/`：Streamlit 会把 `app/pages/` 自动识别为
