@@ -71,3 +71,5 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## 6. Documentation Sync
 
 **Update the docs in the same commit as the change.** A milestone, interface, or frozen-spec change is not done until the docs describing it match — README, milestone/plan docs, and any other frozen spec. No "code moved on, docs still describe the previous version".
+
+**A completed milestone gets a full record, not just a status flag.** Add its section in the same shape as the earlier milestones (what it is / deliverables / measured results / exit verdict). Flipping a ✅ in a summary table is not a record — a reader must be able to learn what was delivered and what was measured without reading the code.
