@@ -41,6 +41,15 @@ def stable_tie_key(pipe_id, seed=SEED):
     return hashlib.sha256(f"{seed}:{pipe_id}".encode("utf-8")).hexdigest()
 
 
+def round_id_of(seed, scheme="random"):
+    """轮次标识，含划分方案（§6.1、§6.2）。
+
+    随机方案下与历史口径逐字节一致；分组方案带方案后缀，避免同一模型在
+    两种划分下的发布撞同一 ID。
+    """
+    return f"seed{seed}" if scheme == "random" else f"seed{seed}-{scheme}"
+
+
 def group_ids(pipes, scheme="road"):
     """生成分组 ID（§6.2）。
 

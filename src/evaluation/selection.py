@@ -12,7 +12,7 @@ import pandas as pd
 
 from src.evaluation.metrics import NotApplicable, ap
 from src.evaluation.runner import _fit_predict_fold
-from src.evaluation.split import N_INNER, SEED, inner_splits
+from src.evaluation.split import N_INNER, SEED, inner_splits, round_id_of
 from src.models import registry
 
 
@@ -107,7 +107,8 @@ def select_within_train(X_train, y_train, candidates, *, seed=SEED, groups=None,
 
 
 def select_and_run(pipes, counts, *, candidates, folds, seed=SEED, groups=None,
-                   tolerance=0.005, calibrate=True, return_fold_state=False):
+                   tolerance=0.005, calibrate=True, split_scheme="random",
+                   return_fold_state=False):
     """逐外层折独立选择候选，再出折外预测。
 
     返回 (折外表, 选择日志[, 折状态])。**不计算任何外层成绩**——
@@ -160,7 +161,7 @@ def select_and_run(pipes, counts, *, candidates, folds, seed=SEED, groups=None,
                 "model_id": chosen.name,
                 "model_params": chosen.label,
                 "calibrated": bool(state["calibrated"]),
-                "round_id": f"seed{seed}",
+                "round_id": round_id_of(seed, split_scheme),
                 "quality_flags": list(state["quality_flags"]),
             })
 

@@ -228,3 +228,104 @@ def aggregate_all(y, p, pipe_ids, fold_ids, q_list=(0.01, 0.05, 0.10), seed=2026
         }
     out["pooled_oof_replay"] = pooled_oof_replay(y, p, pipe_ids, q_list, seed)
     return out
+
+
+# --------------------------------------------------------------------------
+# 扁平化：嵌套聚合 → 契约行（§13.4 `evaluation` 产物）
+# --------------------------------------------------------------------------
+
+FLAT_METRICS = ("ap", "roc_auc", "brier", "log_loss")
+TOPK_FIELDS = ("k_requested", "k_actual", "precision", "recall", "lift")
+
+
+def _flat_row(envelope, *, metric, aggregation, fold=None, value=None,
+              applicable=True, reason=None, valid_folds=None, total_folds=None):
+    row = {
+        **envelope,
+        "metric": metric,
+        "aggregation": aggregation,
+        "fold": fold,
+        "value": None if value is None else float(value),
+        "applicable": bool(applicable),
+        "reason": reason,
+    }
+    if valid_folds is not None:
+        row["valid_folds"] = int(valid_folds)
+    if total_folds is not None:
+        row["total_folds"] = int(total_folds)
+    return row
+
+
+def _topk_rows(envelope, rec, q_list, *, aggregation, fold=None):
+    rows = []
+    for q in q_list:
+        tk = rec.get(f"topk@{q}")
+        if tk is None:
+            continue
+        for field in TOPK_FIELDS:
+            v = tk.get(field)
+            rows.append(_flat_row(
+                envelope, metric=f"{field}@{q}", aggregation=aggregation,
+                fold=fold, value=v,
+                applicable=bool(tk.get("applicable")) and v is not None,
+                reason=tk.get("reason"),
+            ))
+    return rows
+
+
+def flatten_evaluation(scores, envelope, *, q_list=(0.01, 0.05, 0.10)):
+    """把 `aggregate_all` 的嵌套成绩摊平为契约行（§13.4）。
+
+    每行一个 (metric, aggregation, fold) 读数；`aggregation` 取自契约枚举。
+    折被静默丢弃无法表达——宏平均行带 valid_folds/total_folds，逐折行每折
+    都在。pooled 单独成列，不与逐折混写（§6.4.1）。
+
+    envelope: 包级字段（schema_version/data_version/run_id/prediction_mode/data_kind）。
+    """
+    rows = []
+
+    for f, rec in sorted(scores["per_fold"].items()):
+        for metric in FLAT_METRICS:
+            rows.append(_flat_row(
+                envelope, metric=metric, aggregation="per_fold", fold=int(f),
+                value=rec.get(metric),
+                applicable=rec.get(f"{metric}_applicable", False),
+                reason=rec.get(f"{metric}_reason"),
+            ))
+        rows.extend(_topk_rows(envelope, rec, q_list,
+                               aggregation="per_fold", fold=int(f)))
+
+    for metric, rec in scores["macro_mean"].items():
+        value = rec.get("value")
+        rows.append(_flat_row(
+            envelope, metric=metric, aggregation="macro_mean", value=value,
+            applicable=value is not None,
+            reason=None if value is not None else "无有效折",
+            valid_folds=rec.get("valid_folds"), total_folds=rec.get("total_folds"),
+        ))
+        if rec.get("fold_std") is not None:
+            rows.append(_flat_row(
+                envelope, metric=metric, aggregation="fold_std",
+                value=rec["fold_std"], applicable=True,
+                valid_folds=rec.get("valid_folds"),
+                total_folds=rec.get("total_folds"),
+            ))
+
+    for metric, value in scores["sample_weighted"].items():
+        rows.append(_flat_row(
+            envelope, metric=metric, aggregation="sample_weighted", value=value,
+            applicable=value is not None,
+            reason=None if value is not None else "无有效折",
+        ))
+
+    pooled = scores["pooled_oof_replay"] or {}
+    for metric in ("n", "n_positive") + FLAT_METRICS:
+        v = pooled.get(metric)
+        rows.append(_flat_row(
+            envelope, metric=metric, aggregation="pooled_oof_replay", value=v,
+            applicable=v is not None,
+            reason=pooled.get(f"{metric}_reason"),
+        ))
+    rows.extend(_topk_rows(envelope, pooled, q_list,
+                           aggregation="pooled_oof_replay"))
+    return rows

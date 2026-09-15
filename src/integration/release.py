@@ -158,15 +158,21 @@ def build_predictions(oof_df, *, data_version, run_id):
     return rows
 
 
-def build_manifest(artifacts, *, data_version, run_id, model_id, seed):
-    """发布清单：列出数据、模型、参考分布、解释、配置的版本（§13.6）。"""
+def build_manifest(artifacts, *, data_version, run_id, model_id, seed,
+                   configs=None, split=None, data_files=None,
+                   training_fingerprint=None):
+    """发布清单：列出数据、模型、参考分布、解释、配置的版本（§13.6）。
+
+    `configs`/`split`/`data_files`/`training_fingerprint` 是审计页面的
+    数据来源——审计页只读本清单，不碰 pandas，也不读原始 XLSX。
+    """
     entries = {}
     for name, rows in artifacts.items():
         entries[name] = {
             "n_rows": len(rows),
             "fingerprint": _fingerprint(rows),
         }
-    return {
+    manifest = {
         "schema_version": SCHEMA_VERSION,
         "data_version": data_version,
         "run_id": run_id,
@@ -176,6 +182,15 @@ def build_manifest(artifacts, *, data_version, run_id, model_id, seed):
         "prediction_mode": "oof_replay",
         "data_kind": "real_standard",
     }
+    if configs is not None:
+        manifest["configs"] = dict(configs)
+    if split is not None:
+        manifest["split"] = dict(split)
+    if data_files is not None:
+        manifest["data_files"] = dict(data_files)
+    if training_fingerprint is not None:
+        manifest["training_fingerprint"] = training_fingerprint
+    return manifest
 
 
 def verify_by_pipe_id(*tables):

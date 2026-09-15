@@ -10,20 +10,27 @@ from pathlib import Path
 
 from src.contracts import validate_package
 from src.data import loader
-from src.evaluation import reference, runner, split
+from src.evaluation import metrics, protocol, reference, runner, split
 from src.evaluation.metrics import aggregate_all
 from src.integration import fullfit as fullfit_mod
 from src.integration import release
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 OUT_DIR = ROOT / "outputs" / "release"
+GROUPED_DIR_NAME = "release_grouped"
+GROUPED_OUT_DIR = ROOT / "outputs" / GROUPED_DIR_NAME
 FULL_FIT_OUT_DIR = ROOT / "outputs" / fullfit_mod.FULL_FIT_DIR_NAME
 
 MODEL_ID = "B2_age_logreg"
 SEED = 20260914
 
 
-def build_all(out_dir=OUT_DIR):
+def build_all(out_dir=OUT_DIR, *, scheme="random"):
+    """构建一个发布集合。
+
+    scheme="random" 为冻结的随机分层主协议（§6.1），输出与历史逐字节一致；
+    scheme="road" 为按道路分组的补充协议（§6.2），写入独立目录、独立 round_id。
+    """
     out_dir = Path(out_dir)
     pipes = loader.load_attributes()
     events = loader.load_events()
@@ -31,14 +38,25 @@ def build_all(out_dir=OUT_DIR):
 
     pipe_ids = pipes["ID"].astype(str).tolist()
     data_version = release.data_version_of(pipe_ids)
-    run_id = release.run_id_of(MODEL_ID, SEED, data_version)
+
+    groups, group_meta = (
+        (None, None) if scheme == "random" else split.group_ids(pipes, scheme))
 
     # 固定划分
-    table = split.split_table(pipes, counts)
+    table = split.split_table(pipes, counts, groups=groups)
     folds = {int(f): g.index.to_numpy() for f, g in table.groupby("outer_fold")}
+    table_fp = split.table_fingerprint(table, scheme=scheme)
+
+    # 划分指纹纳入 run_id：两种划分方案不得撞同一发布 ID（§6.2）。
+    # 随机方案保持 M1 冻结口径逐字节不变，故不附 spec。
+    run_id = release.run_id_of(
+        MODEL_ID, SEED, data_version,
+        model_spec=None if scheme == "random" else {
+            "split_scheme": scheme, "table_fingerprint": table_fp})
 
     # 折外预测（固定划分，不重算）
-    oof = runner.run_oof(pipes, counts, model_name=MODEL_ID, folds=folds, seed=SEED)
+    oof = runner.run_oof(pipes, counts, model_name=MODEL_ID, folds=folds,
+                         seed=SEED, groups=groups, split_scheme=scheme)
 
     # 四类聚合成绩
     scores = aggregate_all(oof.y_true, oof.p, oof.pipe_id, oof.outer_fold,
@@ -55,9 +73,18 @@ def build_all(out_dir=OUT_DIR):
     geom = release.build_geometry(pipes, data_version=data_version, run_id=run_id)
     preds = release.build_predictions(oof, data_version=data_version, run_id=run_id)
 
+    # 成绩扁平化为契约行（§13.4 `evaluation` 产物）
+    ev_rows = metrics.flatten_evaluation(scores, {
+        "schema_version": release.SCHEMA_VERSION,
+        "data_version": data_version,
+        "run_id": run_id,
+        "prediction_mode": "oof_replay",
+        "data_kind": "real_standard",
+    })
+
     # 契约校验
     for name, rows in [("standard_attributes", std), ("geometry", geom),
-                       ("predictions", preds)]:
+                       ("predictions", preds), ("evaluation", ev_rows)]:
         validate_package(name, rows)
     validate_package("reference_bundle", [bundle])
 
@@ -65,10 +92,27 @@ def build_all(out_dir=OUT_DIR):
     release.verify_by_pipe_id(("standard_attributes", std),
                               ("geometry", geom), ("predictions", preds))
 
+    split_meta = {
+        "scheme": scheme,
+        "seed": SEED,
+        "n_outer": split.N_OUTER,
+        "n_inner": split.N_INNER,
+        "table_fingerprint": table_fp,
+        "folds": split.fold_summary(table, pipes),
+    }
+    if group_meta is not None:
+        split_meta["grouping"] = group_meta
+        split_meta["grouped_diagnostics"] = split.grouped_fold_diagnostics(
+            groups, counts.gt(0).astype(int).to_numpy(), folds)
+
     manifest = release.build_manifest(
         {"standard_attributes": std, "geometry": geom, "predictions": preds,
-         "reference_bundle": [bundle]},
-        data_version=data_version, run_id=run_id, model_id=MODEL_ID, seed=SEED)
+         "reference_bundle": [bundle], "evaluation": ev_rows},
+        data_version=data_version, run_id=run_id, model_id=MODEL_ID, seed=SEED,
+        configs=protocol.config_versions(),
+        split=split_meta,
+        data_files=dict(loader.EXPECTED_SHA256),
+        training_fingerprint=fullfit_mod.training_fingerprint(pipes, counts))
 
     # 落盘
     release.save_json(std, out_dir / "standard_attributes.json")
@@ -76,18 +120,29 @@ def build_all(out_dir=OUT_DIR):
     release.save_json(preds, out_dir / "predictions.json")
     release.save_json([bundle], out_dir / "reference_bundle.json")
     release.save_json(manifest, out_dir / "manifest.json")
-    release.save_json(_jsonable(scores), out_dir / "evaluation.json")
+    release.save_json(ev_rows, out_dir / "evaluation.json")
     # 划分表（A 内部使用，不进入普通发布包）
     split.save_split(table, out_dir / "labels_and_splits.csv")
 
     return {
         "data_version": data_version,
         "run_id": run_id,
+        "scheme": scheme,
         "n_pipes": len(pipes),
         "manifest": manifest,
         "evaluation": scores,
+        "evaluation_rows": ev_rows,
         "reference_usable": bundle["usable"],
     }
+
+
+def build_grouped(out_dir=GROUPED_OUT_DIR):
+    """按道路分组的补充协议发布集合（§6.2）。
+
+    与随机主协议各写一份独立产物：round_id 带方案后缀，两者的差异本身
+    才是有效信息，不得合并成一份成绩。
+    """
+    return build_all(out_dir, scheme="road")
 
 
 def build_full_fit(out_dir=FULL_FIT_OUT_DIR, *, structure="F1_base_environment"):
@@ -138,38 +193,21 @@ def build_full_fit(out_dir=FULL_FIT_OUT_DIR, *, structure="F1_base_environment")
     }
 
 
-def _jsonable(obj):
-    """把 numpy 类型与不可用值转为 JSON 可写形式。"""
-    import numpy as np
-
-    if isinstance(obj, dict):
-        return {k: _jsonable(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_jsonable(v) for v in obj]
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating,)):
-        v = float(obj)
-        return v if np.isfinite(v) else None
-    if isinstance(obj, (np.bool_,)):
-        return bool(obj)
-    if isinstance(obj, float):
-        return obj if np.isfinite(obj) else None
-    return obj
-
-
 def main():
     ap = argparse.ArgumentParser(description="M0 发布构建")
     ap.add_argument("--out", default=str(OUT_DIR))
+    ap.add_argument("--scheme", default="random", choices=["random", "road"],
+                    help="划分方案：random 为冻结主协议，road 为道路分组补充协议")
     args = ap.parse_args()
-    result = build_all(args.out)
+    result = build_all(args.out, scheme=args.scheme)
     summary = {
         "data_version": result["data_version"],
         "run_id": result["run_id"],
+        "scheme": result["scheme"],
         "n_pipes": result["n_pipes"],
         "reference_usable": result["reference_usable"],
-        "macro_mean_ap": result["evaluation"]["macro_mean"]["ap"],
-        "macro_mean_roc_auc": result["evaluation"]["macro_mean"]["roc_auc"],
+        "macro_mean_ap": result["evaluation"]["macro_mean"]["ap"]["value"],
+        "macro_mean_roc_auc": result["evaluation"]["macro_mean"]["roc_auc"]["value"],
         "pooled_oof_ap": result["evaluation"]["pooled_oof_replay"]["ap"],
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, default=str))

@@ -200,6 +200,9 @@ PRODUCTS = {
             ("value", F.FLOAT, False, None),
             ("applicable", F.BOOL, True, None),
             ("reason", F.STR, False, None),
+            # 宏平均行的有效折计数：任何折被静默丢弃都必须看得见（§6.4.1）
+            ("valid_folds", F.INT, False, None),
+            ("total_folds", F.INT, False, None),
         ),
     ),
     "event_view": Product(

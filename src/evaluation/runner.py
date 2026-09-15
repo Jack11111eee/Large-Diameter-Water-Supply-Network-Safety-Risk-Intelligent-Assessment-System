@@ -7,7 +7,7 @@
 import numpy as np
 import pandas as pd
 
-from src.evaluation.split import SEED, inner_splits
+from src.evaluation.split import SEED, inner_splits, round_id_of
 from src.models.baselines import B0BaseRate, B1AgeRank, B2AgeLogReg
 from src.models.calibration import (
     SigmoidCalibrator,
@@ -64,7 +64,7 @@ def _fit_predict_fold(X_tr, y_tr, X_te, factory, *, calibrate, seed, groups_tr=N
 
 def run_oof(pipes, counts, *, model_name="B2_age_logreg", calibrate=True,
             layer_columns=None, seed=SEED, folds=None, groups=None,
-            return_fold_state=False):
+            split_scheme="random", return_fold_state=False):
     """主协议：管段级嵌套交叉验证折外预测。
 
     返回逐管段折外预测表（每根管段恰好一次）。
@@ -72,6 +72,7 @@ def run_oof(pipes, counts, *, model_name="B2_age_logreg", calibrate=True,
     folds: 可选，预先固定的 {fold: test_idx}。泄漏测试必须传入固定划分，
     不得重新执行依赖标签的分层划分（§3.4）。
     groups: 可选，与管段对齐的分组数组；给出时外层与内层共享分组边界（§6.2）。
+    split_scheme: 划分方案名，进入 round_id；随机方案下与历史口径逐字节一致。
     return_fold_state: 为 True 时额外返回每折已拟合的模型与校准器，
     供解释复用，避免重新拟合导致解释与已发布预测不一致（§7.1）。
     """
@@ -120,7 +121,7 @@ def run_oof(pipes, counts, *, model_name="B2_age_logreg", calibrate=True,
                 "raw_score": float(raw[i]),
                 "model_id": model_name,
                 "calibrated": bool(state["calibrated"]),
-                "round_id": f"seed{seed}",
+                "round_id": round_id_of(seed, split_scheme),
                 "quality_flags": list(state["quality_flags"]),
             })
 

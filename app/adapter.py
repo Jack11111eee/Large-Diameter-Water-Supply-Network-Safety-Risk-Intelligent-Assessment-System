@@ -46,7 +46,7 @@ REQUIRED_PRODUCTS = ("standard_attributes", "predictions")
 
 # 走契约校验的列表型产物
 LIST_PRODUCTS = ("standard_attributes", "geometry", "predictions",
-                 "explanation", "decision", "reference_bundle")
+                 "explanation", "decision", "reference_bundle", "evaluation")
 
 # 必须一致的包级字段：同一发布包的标识与口径。
 # data_version 不列入：M0 核心的参考分布包以 round_id 记 data_version，
@@ -200,7 +200,7 @@ class PackageSet:
     report: LoadReport
     pipes: tuple
     reference_bundle: dict | None
-    evaluation: dict | None
+    evaluation: list | None
     manifest: dict | None
     decision: DecisionView
 
