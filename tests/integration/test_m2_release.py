@@ -79,9 +79,15 @@ def test_grouped_round_id_carries_scheme(grouped):
 
 
 def test_grouped_run_id_differs_from_random(grouped):
-    _, result, _ = grouped
-    random_run = pipeline.release.run_id_of(pipeline.MODEL_ID, pipeline.SEED,
-                                            result["data_version"])
+    """同划分指纹、同候选集，仅划分方案不同，也不得撞同一发布 ID（§6.2）。
+
+    刻意固定其余项只动 scheme：随机与分组若只靠指纹不同才不撞 ID，
+    那是巧合而不是保证。
+    """
+    _, result, f = grouped
+    random_run = pipeline.release_run_id(
+        result["data_version"], "random",
+        f["manifest.json"]["split"]["table_fingerprint"])
     assert result["run_id"] != random_run
 
 

@@ -190,11 +190,14 @@ def build_event_view(pipes, events, *, data_version, run_id, as_of):
 
 def build_manifest(artifacts, *, data_version, run_id, model_id, seed,
                    configs=None, split=None, data_files=None,
-                   training_fingerprint=None):
+                   training_fingerprint=None, selection=None):
     """发布清单：列出数据、模型、参考分布、解释、配置的版本（§13.6）。
 
-    `configs`/`split`/`data_files`/`training_fingerprint` 是审计页面的
-    数据来源——审计页只读本清单，不碰 pandas，也不读原始 XLSX。
+    `configs`/`split`/`data_files`/`training_fingerprint`/`selection` 是审计
+    页面的数据来源——审计页只读本清单，不碰 pandas，也不读原始 XLSX。
+
+    `model_id` 是发布模型标识。发布模型为候选选择流程时，它是**流程**标识，
+    逐折实际选中的候选由 `selection` 记录——两者不同不是矛盾。
     """
     entries = {}
     for name, rows in artifacts.items():
@@ -220,6 +223,8 @@ def build_manifest(artifacts, *, data_version, run_id, model_id, seed,
         manifest["data_files"] = dict(data_files)
     if training_fingerprint is not None:
         manifest["training_fingerprint"] = training_fingerprint
+    if selection is not None:
+        manifest["selection"] = dict(selection)
     return manifest
 
 

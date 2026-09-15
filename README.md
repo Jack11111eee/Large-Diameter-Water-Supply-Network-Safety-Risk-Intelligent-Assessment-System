@@ -16,20 +16,24 @@ python3 -m pip install pandas numpy scikit-learn pytest openpyxl streamlit plotl
 实测版本：pandas 2.3.3、numpy 2.3.5、scikit-learn 1.8.0、pytest 9.1.1、streamlit 1.63.0、plotly 7.0.0、networkx 3.6.1。
 
 M0 路径只依赖前四项。决策与界面模块依赖 stdlib（决策）与 streamlit/plotly/networkx（界面）。
-CatBoost / SHAP 不在 M1 路径上（留 M2）。
+CatBoost 未引入（树候选用 sklearn HGB）；SHAP 0.52.0 已用于 M2 的解释产物。
 
 ## 2. 跑测试
 
 ```bash
-python3 -m pytest tests/             # 411 项，约 2 分钟
+python3 -m pytest tests/             # 全量，含真实 7,288 条发布构建，约 20 分钟
+python3 -m pytest tests/ -m "not slow"   # 跳过真实数据用例，开发时用
 python3 -m pytest tests/core/        # 契约、审计、指标、模型
 python3 -m pytest tests/decision/    # 分级、后果、Top-K、建议规则
 python3 -m pytest tests/app/         # 界面适配器与页面
-python3 -m pytest tests/integration/ # M0 出口判定 + M1 闭环
+python3 -m pytest tests/integration/ # M0 出口判定 + M1 闭环 + M2 发布校验
 ```
 
 `tests/integration/test_m1_closure.py` 是 M1 门禁：真实属性 → 折外概率 →
 逐折成绩 → 概率 Top-K → 页面，并断言页面与导出不重算业务逻辑。
+
+`tests/integration/test_release_model_pin.py` 钉住发布模型标识：改发布模型会让它失败，
+那是设计意图，见 §8 的发布模型变更说明。
 
 ### 匿名检查（§里程碑 4.6）
 
@@ -82,9 +86,9 @@ python3 -m src.integration.experiments        # 输出到 outputs/experiments/
 | `src/contracts/` | 核心 | schema、版本、错误表示 |
 | `src/data/` | 核心 | 只读加载、白名单、折内预处理 |
 | `src/audit/` | 核心 | 数据审计 |
-| `src/models/` | 核心 | B0/B1/B2 基线、校准 |
-| `src/evaluation/` | 核心 | 划分、指标、折外预测、参考分布包 |
-| `src/integration/` | 核心 | 发布清单、M0 入口 |
+| `src/models/` | 核心 | B0/B1/B2 基线、候选注册表与树候选、校准 |
+| `src/evaluation/` | 核心 | 划分、指标、折外预测、候选选择、校准对照、消融、参考分布包 |
+| `src/integration/` | 核心 | 发布清单与构建入口、全量拟合、实验产物包 |
 | `src/decision/` | 决策 | 分级、后果代理、Top-K、建议 |
 | `src/explain/` | 核心 | SHAP 归因、加和核验、解释产物 |
 | `app/` | 界面 | 界面 |
@@ -154,8 +158,14 @@ advise_post_event(pipe_views, event_view, as_of, rules)           -> post_event_
 （新增事后运维复核、数据审计、实验审计）。
 
 **未完成（留 M3）**：可选成本背包、坐标分块验证（§6.2 写作「可选」）、
-正式验收材料。发布包模型仍是 M1 冻结的 `B2_age_logreg`；是否改用 M2 候选流程选出的
-模型属决策，不在此处静默变更。
+正式验收材料。
+
+**发布模型变更（M2 后）**：发布包模型已由 M1 冻结的 `B2_age_logreg`（仅管龄，单特征）
+换成 F1 层上的候选选择流程 `F1_candidate_flow`（逐外层折在内层 AP 上选候选，
+容差 0.005 内优先简单模型）。B2 保留为文档化的基线，不再是发布模型。
+两套在同一冻结划分上的对照成绩见 `里程碑与实施计划.md`。
+`tests/integration/test_release_model_pin.py` 把发布模型标识钉住：以后再改必须
+同时改该测试、重建 `outputs/` 并在里程碑文档记录，不会静默变更。
 
 ## 9. 已修正的文档与实现问题
 
