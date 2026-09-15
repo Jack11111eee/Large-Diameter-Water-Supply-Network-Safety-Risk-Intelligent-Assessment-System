@@ -1,0 +1,30 @@
+{
+  "candidates_version": "candidates_v1",
+  "note": "预注册候选与选择协议（§5.1、§5.2）。选择只用外层训练集内部信息，不得用外层成绩回选模型。方案 §5.1 记名的「F1 CatBoost」在本环境未安装 catboost，按同节「实现优先采用 scikit-learn 和 CatBoost」改用 sklearn HistGradientBoostingClassifier，已在里程碑 M2 记录中说明。",
+  "selection": {
+    "criterion": "inner_ap",
+    "tolerance": 0.005,
+    "tie_break": "prefer_lower_complexity_rank",
+    "aggregate": "per_fold_mean"
+  },
+  "candidates": [
+    {
+      "name": "logreg",
+      "family": "linear",
+      "complexity_rank": 0,
+      "param_grid": [
+        {"C": 0.1},
+        {"C": 1.0}
+      ]
+    },
+    {
+      "name": "hgb",
+      "family": "tree",
+      "complexity_rank": 1,
+      "param_grid": [
+        {"max_leaf_nodes": 15, "learning_rate": 0.06},
+        {"max_leaf_nodes": 31, "learning_rate": 0.06}
+      ]
+    }
+  ]
+}

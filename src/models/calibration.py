@@ -63,7 +63,13 @@ def ensemble_predict(models, calibrators, X_test):
 
 
 def scores_fn(model, X):
-    """基础模型的原始输出。逻辑回归用决策函数（log-odds 尺度）。"""
+    """基础模型的原始输出（log-odds 尺度，§7.1）。
+
+    树候选显式提供 raw_scores_，必须优先判断——否则会把概率混进
+    原始分数列，破坏 SHAP 加和核验与校准对照。
+    """
+    if hasattr(model, "raw_scores_"):
+        return model.raw_scores_(X)
     if hasattr(model, "clf_"):
         Xt = model.prep_.transform(X)
         return model.clf_.decision_function(Xt)

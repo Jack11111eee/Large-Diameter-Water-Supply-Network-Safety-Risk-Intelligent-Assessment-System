@@ -6,9 +6,8 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
 
-from src.evaluation.split import SEED, N_INNER, inner_splits
+from src.evaluation.split import SEED, inner_splits
 from src.models.baselines import B0BaseRate, B1AgeRank, B2AgeLogReg
 from src.models.calibration import (
     SigmoidCalibrator,
@@ -19,33 +18,6 @@ from src.models.calibration import (
 
 def _fit_fn(model_factory):
     return lambda X, y: model_factory().fit(X, y)
-
-
-def _select_within_train(X_train, y_train, candidates, seed=SEED):
-    """内层 3 折选择（§6.1 步骤 1、§5.2）。
-
-    主选择依据为内层 AP。候选差异较小时优先简单模型。
-    选择只使用外层训练集内部信息。
-    """
-    from src.evaluation.metrics import ap, NotApplicable
-
-    skf = StratifiedKFold(n_splits=N_INNER, shuffle=True, random_state=seed)
-    scores = {name: [] for name in candidates}
-    for tr, va in skf.split(np.zeros(len(y_train)), y_train):
-        for name, factory in candidates.items():
-            m = factory().fit(X_train.iloc[tr], y_train[tr])
-            p = m.predict_proba(X_train.iloc[va])
-            try:
-                scores[name].append(ap(y_train[va], p))
-            except NotApplicable:
-                continue
-    means = {n: (float(np.mean(v)) if v else -np.inf) for n, v in scores.items()}
-    # 容差 0.005：差异较小时按预定义顺序优先简单模型
-    best = max(means.values())
-    for name in candidates:  # 预定义顺序即简单度顺序
-        if means[name] >= best - 0.005:
-            return name, means
-    return max(means, key=means.get), means
 
 
 def _fit_predict_fold(X_tr, y_tr, X_te, factory, *, calibrate, seed, groups_tr=None):
