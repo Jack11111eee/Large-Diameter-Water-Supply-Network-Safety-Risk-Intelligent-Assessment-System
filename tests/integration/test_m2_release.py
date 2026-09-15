@@ -15,6 +15,9 @@ from src.evaluation import split
 from src.explain import artifacts as explain_artifacts
 from src.integration import pipeline
 
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
+
 N_PIPES = 7288
 
 

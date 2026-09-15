@@ -10,6 +10,9 @@ from src.data import loader
 from src.evaluation import runner, selection, split
 from src.models.calibration import SigmoidCalibrator, needs_calibration
 
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="module")
 def data():

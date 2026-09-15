@@ -4,7 +4,6 @@
 事后建议是独立清单，不改变预测侧任何数值。
 """
 
-import ast
 import sys
 from pathlib import Path
 
@@ -15,6 +14,9 @@ from app import adapter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import anonymity  # noqa: E402
+
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 MAIN = ROOT / "app" / "main.py"
@@ -48,8 +50,9 @@ def _rendered_total(at):
     raise AssertionError("页面没有给出事后建议条数说明")
 
 
-def package_rows(as_of):
-    return adapter.load_package_set().decision.post_event(as_of)
+def package_rows(package, as_of):
+    """复用已装载的包，避免重复读入 40MB 级属性产物。"""
+    return package.decision.post_event(as_of)
 
 
 # ---- 适配器入口 ----
@@ -154,7 +157,7 @@ def test_page_renders_when_enabled():
     assert not any("默认关闭" in m.value for m in at.info)
 
 
-def test_page_uses_the_given_as_of():
+def test_page_uses_the_given_as_of(package):
     """改截止日会真正改变结果，界面不吞掉这个输入。"""
     at = _open_page()
     at.toggle[0].set_value(True).run()
@@ -164,8 +167,8 @@ def test_page_uses_the_given_as_of():
     early = _rendered_total(at)
     assert early < late
     # 页面显示的条数与决策模块自己算出的条数一致，界面不增删
-    assert late == len(package_rows(adapter.DEFAULT_AS_OF))
-    assert early == len(package_rows("2024-03-31"))
+    assert late == len(package_rows(package, adapter.DEFAULT_AS_OF))
+    assert early == len(package_rows(package, "2024-03-31"))
 
 
 def test_page_refuses_an_illegal_as_of():

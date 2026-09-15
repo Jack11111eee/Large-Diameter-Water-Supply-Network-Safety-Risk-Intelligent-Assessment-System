@@ -13,6 +13,9 @@ import pytest
 from src.contracts import PRODUCTS, validate_package
 from src.integration import pipeline
 
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 
