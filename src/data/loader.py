@@ -116,6 +116,22 @@ def feature_matrix(pipes, layer):
     return frame[cols].copy()
 
 
+def with_derived_features(pipes):
+    """补齐可由节点 ID 派生的列（F3），供训练路径使用（§3.2）。
+
+    训练路径把原始属性表直接交给模型，模型自行选列；F3 列不在原始表中，
+    必须在进入模型前派生。幂等：已存在则不重复派生，索引与顺序不变。
+    """
+    missing = [c for c in load_whitelist()["layers"]["F3_topology"]
+               if c not in pipes.columns]
+    if not missing:
+        return pipes
+    from src.data.topology import derive_topology_features
+
+    derived = derive_topology_features(pipes)
+    return pipes.assign(**{c: derived[c] for c in missing})
+
+
 def numeric_fields():
     """白名单声明的数值字段（§3.2）。供预处理区分数值与类别。"""
     return frozenset(load_whitelist()["numeric_fields"])
