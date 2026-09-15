@@ -7,8 +7,11 @@ import numpy as np
 import pytest
 
 from src.data import loader
-from src.evaluation import runner, split
+from src.evaluation import runner, selection, split
 from src.models.calibration import SigmoidCalibrator, needs_calibration
+
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(scope="module")
@@ -193,3 +196,62 @@ def test_preprocessor_fit_only_on_train():
     assert prep._medians["PIPEAGE"] == 2.0
     out = prep.transform(Xte)
     assert np.isfinite(out).all()
+
+
+# --------------------------------------------------------------------------
+# 树候选（§5.1）
+# --------------------------------------------------------------------------
+
+TREE_CONFIG = {
+    "candidates_version": "test_tree",
+    "selection": {"criterion": "inner_ap", "tolerance": 0.005},
+    "candidates": [{
+        "name": "hgb", "family": "tree", "complexity_rank": 1,
+        "param_grid": [{"max_leaf_nodes": 15, "learning_rate": 0.06}],
+    }],
+}
+
+
+@pytest.fixture(scope="module")
+def tree_oof(data):
+    pipes, counts = data
+    cands = selection.candidates_from_config(
+        loader.resolve_layer("F1_base_environment"), config=TREE_CONFIG)
+    folds = split.make_outer_folds(
+        pipes["ID"].astype(str).to_numpy(),
+        counts.gt(0).astype(int).to_numpy())
+    df, _ = selection.select_and_run(pipes, counts, candidates=cands, folds=folds)
+    return df
+
+
+def test_tree_candidate_oof_is_complete(tree_oof):
+    assert len(tree_oof) == 7288
+    assert tree_oof.pipe_id.is_unique
+    assert np.isfinite(tree_oof.p).all()
+    assert (tree_oof.p >= 0).all() and (tree_oof.p <= 1).all()
+
+
+def test_tree_candidate_sanity_bound(tree_oof):
+    """树候选折外 AUC 必须远离泄漏水平（§3.2）。
+
+    0.87 是官方评分含标签的泄漏对照线，**不是**性能上限：
+    数据报告 §8 已撤回「AUC 0.80 天花板」，此处不设任何上限断言。
+    """
+    from src.evaluation import metrics
+    agg = metrics.aggregate_all(tree_oof.y_true, tree_oof.p, tree_oof.pipe_id,
+                                tree_oof.outer_fold, q_list=())
+    auc = agg["macro_mean"]["roc_auc"]["value"]
+    assert 0.5 < auc < 0.87, f"树候选折外 AUC 异常: {auc}"
+
+
+def test_tree_raw_score_is_log_odds(data):
+    """树候选原始输出必须是 log-odds，不能是概率（§7.1）。"""
+    from src.models.calibration import scores_fn
+    from src.models.tree import HGBTClassifier
+    pipes, counts = data
+    y = counts.gt(0).astype(int).to_numpy()
+    X = pipes.iloc[:2000].reset_index(drop=True)
+    model = HGBTClassifier(["PIPEAGE", "CZ"]).fit(X, y[:2000])
+    raw = scores_fn(model, X)
+    assert not np.allclose(raw, model.predict_proba(X))
+    assert (raw < -1).any() or (raw > 1).any()

@@ -200,6 +200,9 @@ PRODUCTS = {
             ("value", F.FLOAT, False, None),
             ("applicable", F.BOOL, True, None),
             ("reason", F.STR, False, None),
+            # 宏平均行的有效折计数：任何折被静默丢弃都必须看得见（§6.4.1）
+            ("valid_folds", F.INT, False, None),
+            ("total_folds", F.INT, False, None),
         ),
     ),
     "event_view": Product(
@@ -210,6 +213,9 @@ PRODUCTS = {
             ("pipe_id", F.STR, True, None),
             ("event_count", F.INT, True, None),
             ("as_of", F.STR, True, None),
+            # 原始事件日期：使决策模块可在任意合法 as_of 下重算，
+            # 而不是把某个截止日的计数写死成唯一口径（§8.5）。
+            ("events", F.LIST, False, None),
         ),
         unique_key="pipe_id",
     ),

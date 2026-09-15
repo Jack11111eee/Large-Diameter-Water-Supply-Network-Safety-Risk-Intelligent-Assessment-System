@@ -17,6 +17,12 @@ SCENARIO_CONFIG_VERSION = "consequence_scenario_v1"
 # 建议规则版本（§8.4）。
 ADVICE_RULES_VERSION = "advice_rules_v1"
 
+# 候选模型配置版本（configs/models/candidates.json，§5.1）。
+MODEL_CONFIG_VERSION = "candidates_v1"
+
+# 评测协议配置版本（configs/evaluation/protocol.json，§6.1、§6.2）。
+EVALUATION_CONFIG_VERSION = "protocol_v1"
+
 
 class DataKind(str, Enum):
     """产物来源。样例与正式产物必须分开（§13.3）。"""

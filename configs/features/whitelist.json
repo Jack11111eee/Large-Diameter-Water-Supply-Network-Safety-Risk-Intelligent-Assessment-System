@@ -23,13 +23,26 @@
     "INSPF": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "巡检频次(次/年)\\n(INSPF)", "unit": "count/year", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["not_pre_event"]},
     "REPCNT": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "维修次数\\n(REPCNT)", "unit": "count", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["may_be_post_event"]},
     "REPCO2": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "大修/改造次数\\n(REPCO2)", "unit": "count", "derivation": "raw", "observed_at_status": "snapshot_unknown", "quality_flags": ["may_be_post_event"]},
-    "RENYR": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "最近改造年份\\n(RENYR)", "unit": "year", "derivation": "raw_zero_is_missing", "observed_at_status": "snapshot_unknown", "quality_flags": ["zero_means_unrecorded"]}
+    "RENYR": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "最近改造年份\\n(RENYR)", "unit": "year", "derivation": "raw_zero_is_missing", "observed_at_status": "snapshot_unknown", "quality_flags": ["zero_means_unrecorded"]},
+    "node_degree": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "起点节点ID(QSJD) + 终点节点ID(JSJDID)", "unit": "count", "derivation": "derived_topology", "observed_at_status": "network_snapshot", "quality_flags": ["network_structure_known"]},
+    "node_adjacency": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "起点节点ID(QSJD) + 终点节点ID(JSJDID)", "unit": "count", "derivation": "derived_topology", "observed_at_status": "network_snapshot", "quality_flags": ["network_structure_known"]},
+    "component_size": {"source_file": "DemoPipes属性数据.xlsx", "source_sheet": "全部属性", "source_column": "起点节点ID(QSJD) + 终点节点ID(JSJDID)", "unit": "count", "derivation": "derived_topology", "observed_at_status": "network_snapshot", "quality_flags": ["network_structure_known"]}
   },
   "layers": {
     "F0_minimal_baseline": ["PIPEAGE"],
     "F1_base_environment": ["PIPEAGE", "CZ", "GJ", "BURDEP", "QDMS", "ZDMS", "JOINTT", "INSTYPE", "GWLEV", "GEO", "RDTYPE", "BLDENS", "FAC", "LMX", "ISSUB"],
     "F2_operational_snapshot": ["PRESS", "VELOC", "OPSST", "INSPF", "REPCNT", "REPCO2", "RENYR"],
     "F3_topology": ["node_degree", "node_adjacency", "component_size"]
+  },
+  "layer_separator": "+",
+  "layer_note": "层规格可用 '+' 组合，按声明顺序拼接去重（§3.2 F2/F3 附加消融）。",
+  "numeric_fields": ["PIPEAGE", "GJ", "BURDEP", "QDMS", "ZDMS", "GWLEV", "PRESS", "VELOC", "INSPF", "REPCNT", "REPCO2", "RENYR", "node_degree", "node_adjacency", "component_size"],
+  "feature_groups": {
+    "基础": ["PIPEAGE", "CZ", "GJ", "JOINTT", "INSTYPE", "ISSUB"],
+    "水力": ["PRESS", "VELOC"],
+    "运维": ["OPSST", "INSPF", "REPCNT", "REPCO2", "RENYR"],
+    "环境": ["GEO", "GWLEV", "BURDEP", "QDMS", "ZDMS", "RDTYPE", "BLDENS", "FAC", "LMX"],
+    "拓扑": ["node_degree", "node_adjacency", "component_size"]
   },
   "isolated_fields": {
     "FLOW": {"reason": "单位疑点未核，排除主模型及漏水量、负荷、成本计算", "flow_unit_status": "unverified"},

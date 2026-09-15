@@ -56,7 +56,22 @@ python3 -m src.integration.pipeline --out /tmp/m0
 ```
 
 产物：`standard_attributes.json`、`geometry.json`、`predictions.json`、
-`reference_bundle.json`、`manifest.json`、`evaluation.json`、`labels_and_splits.csv`。
+`reference_bundle.json`、`explanation.json`、`evaluation.json`、`event_view.json`、
+`manifest.json`、`labels_and_splits.csv`。
+
+按道路分组的补充协议（§6.2）与全量拟合（§6.5）各写独立目录：
+
+```bash
+python3 -m src.integration.pipeline --scheme road --out outputs/release_grouped
+python3 -c "from src.integration import pipeline; pipeline.build_full_fit()"
+```
+
+M2 实验产物包（候选选择日志、校准对照、结构消融）不属于发布契约，
+单独构建、单独存放：
+
+```bash
+python3 -m src.integration.experiments        # 输出到 outputs/experiments/
+```
 
 `outputs/` 按保密要求管理，不纳入版本控制。
 
@@ -71,9 +86,9 @@ python3 -m src.integration.pipeline --out /tmp/m0
 | `src/evaluation/` | 核心 | 划分、指标、折外预测、参考分布包 |
 | `src/integration/` | 核心 | 发布清单、M0 入口 |
 | `src/decision/` | 决策 | 分级、后果代理、Top-K、建议 |
-| `src/explain/report_gen/` | 决策 | 业务建议生成 |
+| `src/explain/` | 核心 | SHAP 归因、加和核验、解释产物 |
 | `app/` | 界面 | 界面 |
-| `configs/contracts/`、`features/`、`models/`、`evaluation/` | 核心 | 公共配置 |
+| `configs/features/`、`models/`、`evaluation/` | 核心 | 白名单、候选模型、评测协议 |
 | `configs/decision/` | 决策 | 等级、后果、建议规则配置 |
 | `tests/core/`、`tests/integration/` | 核心 | |
 | `tests/decision/` | 决策 | |
@@ -133,8 +148,14 @@ advise_post_event(pipe_views, event_view, as_of, rules)           -> post_event_
 界面三页（总览清单 / 管段详情 / 资源清单，含空错误态与导出）、M1 闭环集成测试。
 展示包补充 `OPSST`/`PRESS`（决策 R02 依赖，属 F2 展示字段，不进训练白名单）。
 
-**未完成（留 M2/M3）**：CatBoost 候选、F2/F3 消融、SHAP 归因、空间/道路敏感性协议、
-界面的事后运维页与审计页、可选成本背包、全量拟合模型。
+**M2 已完成**：层组合与 F3 拓扑派生、道路分组划分（§6.2）、候选注册表与内层 AP 选择、
+校准对照与可靠性分箱、SHAP 归因与加和核验、F2/F3 消融与逐折配对 delta、全量拟合独立产物、
+扁平化 `evaluation` 契约行与审计清单、发布包解释产物与事件视图，界面扩到六页
+（新增事后运维复核、数据审计、实验审计）。
+
+**未完成（留 M3）**：可选成本背包、坐标分块验证（§6.2 写作「可选」）、
+正式验收材料。发布包模型仍是 M1 冻结的 `B2_age_logreg`；是否改用 M2 候选流程选出的
+模型属决策，不在此处静默变更。
 
 ## 9. 已修正的文档与实现问题
 
@@ -145,3 +166,7 @@ advise_post_event(pipe_views, event_view, as_of, rules)           -> post_event_
 | 方案 §8.4 | 规则表无 O01 行，但执行顺序含 O01、T07/T08 要求 O01 | 按 §8.5 散文的触发条件实现 O01 |
 | 实现 | 参考分布包 `data_version` 误用 `round_id`（`seed20260914`），与其余产物版本不一致，违反 §13.3 | 改为传入真实 `data_version`；加回归测试 |
 | 实现 | D01 把**全表**标记 `semantics_unverified` 当作逐管段冲突，真实数据上命中 100% 管段 | 只收逐管段冲突；D01 命中降为 29 条（坐标冲突数），加回归测试 |
+| 方案 §5.1 | 写「M2 = F1 CatBoost」，但 CatBoost 未安装且未获准引入 | 实现为 sklearn `HistGradientBoostingClassifier`，属有据替换，在 `configs/models/candidates.json` 的 `note` 中记录 |
+| 实现 | `evaluation.json` 原为嵌套结构，从未过契约校验 | M2 改为 §13.4 的契约行并纳入 `validate_package`；M1 闭环测试同提交更新，属有意变更 |
+| 实现 | 发布包从不产出 `explanation.json`，管段详情页解释恒为 unavailable | M2 补齐 A 侧生产者，复用每折已拟合模型，加和核验不过则整包拒绝发布 |
+| 数据报告 §8 | `AUC 0.80 天花板` 已被明确撤回 | 不得引用、不得作为验收依据；代码与产物中扫描 `0.80`/`天花板`/`上限` 加测试钉住 |

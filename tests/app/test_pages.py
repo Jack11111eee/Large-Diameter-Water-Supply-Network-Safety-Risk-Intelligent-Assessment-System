@@ -19,13 +19,14 @@ import anonymity  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURES = ROOT / "tests" / "fixtures"
 MAIN = ROOT / "app" / "main.py"
-PAGES = ["风险总览与清单", "管段详情", "资源清单"]
+PAGES = ["风险总览与清单", "管段详情", "资源清单", "事后运维复核",
+         "数据审计", "实验审计"]
 TIMEOUT = 300
 
 
 @pytest.mark.parametrize("page", PAGES)
 def test_pages_render_on_real_release(page, monkeypatch):
-    """正式产物在场时三页都能渲染，无异常。"""
+    """正式产物在场时各页都能渲染，无异常。"""
     monkeypatch.delenv(adapter.ENV_PACKAGE_DIR, raising=False)
     at = AppTest.from_file(str(MAIN), default_timeout=TIMEOUT)
     at.run()
@@ -36,7 +37,7 @@ def test_pages_render_on_real_release(page, monkeypatch):
 
 @pytest.mark.parametrize("page", PAGES)
 def test_pages_render_on_fixture_fallback(page, monkeypatch):
-    """正式产物缺失时回退到夹具，三页仍能渲染且标出夹具来源。"""
+    """正式产物缺失时回退到夹具，各页仍能渲染且标出夹具来源。"""
     monkeypatch.setenv(adapter.ENV_PACKAGE_DIR, "/nonexistent/package/dir")
     at = AppTest.from_file(str(MAIN), default_timeout=TIMEOUT)
     at.run()

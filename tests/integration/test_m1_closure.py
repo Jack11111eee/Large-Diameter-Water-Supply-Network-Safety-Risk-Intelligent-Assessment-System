@@ -31,6 +31,9 @@ from src.decision import (
 )
 from src.integration import pipeline
 
+# 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
+pytestmark = pytest.mark.slow
+
 N_PIPES = 7288
 
 
@@ -68,16 +71,28 @@ def test_closure_attributes_and_probabilities_cover_all_pipes(artifacts):
 
 
 def test_closure_per_fold_scores_are_separated_and_complete(artifacts):
-    """四类聚合分列，无失败折（§6.4.1）。"""
+    """四类聚合分列，无失败折（§6.4.1）。
+
+    有意变更（M2）：`evaluation.json` 由嵌套结构改为契约行（§13.4），
+    故按 aggregation 分组读取，而不是读 `ev["macro_mean"]`。
+    """
     ev = artifacts["eval"]
-    for key in ("per_fold", "macro_mean", "sample_weighted", "pooled_oof_replay"):
-        assert key in ev
-    mm = ev["macro_mean"]["roc_auc"]
+    aggs = {r["aggregation"] for r in ev}
+    assert aggs == {"per_fold", "macro_mean", "fold_std",
+                    "sample_weighted", "pooled_oof_replay"}
+
+    folds = {r["fold"] for r in ev if r["aggregation"] == "per_fold"}
+    assert folds == {0, 1, 2, 3, 4}
+
+    mm = [r for r in ev
+          if r["aggregation"] == "macro_mean" and r["metric"] == "roc_auc"][0]
     assert mm["valid_folds"] == mm["total_folds"] == 5
-    assert mm["complete"] is True
-    assert len(ev["per_fold"]) == 5
+    assert mm["applicable"] is True
+
+    pooled = [r for r in ev
+              if r["aggregation"] == "pooled_oof_replay" and r["metric"] == "roc_auc"][0]
     # pooled 与逐折分列，不混写
-    assert ev["pooled_oof_replay"]["roc_auc"] != mm["value"]
+    assert pooled["value"] != mm["value"]
 
 
 def test_closure_probabilities_are_valid(artifacts):

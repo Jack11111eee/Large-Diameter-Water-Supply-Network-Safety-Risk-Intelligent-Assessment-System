@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from src.data import loader
 
@@ -28,29 +29,10 @@ def _fingerprint(payload):
 
 
 def compute_components(pipes):
-    """数字 ID 图的连通分量（§4）。每个 pipe_id 为独立边，无向多重图。"""
-    parent = {}
+    """数字 ID 图的连通分量（§4）。实现见 src.data.topology。"""
+    from src.data.topology import component_ids
 
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    for u, v in zip(pipes["QSJD"], pipes["JSJDID"]):
-        parent.setdefault(u, u)
-        parent.setdefault(v, v)
-        ru, rv = find(u), find(v)
-        if ru != rv:
-            parent[ru] = rv
-
-    roots, comp = {}, []
-    for u in pipes["QSJD"]:
-        r = find(u)
-        if r not in roots:
-            roots[r] = len(roots)
-        comp.append(roots[r])
-    return comp
+    return component_ids(pipes)
 
 
 def compute_coordinate_conflicts(pipes):
@@ -157,7 +139,7 @@ def build_predictions(oof_df, *, data_version, run_id):
     """预测包。不含 y_true（§13.4）。"""
     rows = []
     for r in oof_df.itertuples():
-        flags = []
+        flags = list(getattr(r, "quality_flags", []) or [])
         if not np.isfinite(r.p):
             flags.append("prediction_invalid")
         rows.append({
@@ -177,15 +159,50 @@ def build_predictions(oof_df, *, data_version, run_id):
     return rows
 
 
-def build_manifest(artifacts, *, data_version, run_id, model_id, seed):
-    """发布清单：列出数据、模型、参考分布、解释、配置的版本（§13.6）。"""
+def build_event_view(pipes, events, *, data_version, run_id, as_of):
+    """事件视图（§8.5、§13.4）。
+
+    事后运维复核的输入：每条管段在截止日之前的事件。保留原始事件日期，
+    使决策模块能在任意合法 as_of 下重算，而不是把某个截止日的计数写死。
+    as_of 必须由调用方显式传入，不隐式取系统当前日。
+    """
+    by_pipe = {}
+    for pipe_id, date in zip(events["管道ID"], events["爆管日期"]):
+        key = str(pipe_id)
+        by_pipe.setdefault(key, []).append(pd.Timestamp(date).strftime("%Y-%m-%d"))
+
+    rows = []
+    for pid in pipes["ID"].astype(str):
+        dates = sorted(by_pipe.get(pid, []))
+        rows.append({
+            "schema_version": SCHEMA_VERSION,
+            "data_version": data_version,
+            "run_id": run_id,
+            "prediction_mode": "oof_replay",
+            "data_kind": "real_standard",
+            "pipe_id": pid,
+            "event_count": sum(1 for d in dates if d <= as_of),
+            "as_of": as_of,
+            "events": dates,
+        })
+    return rows
+
+
+def build_manifest(artifacts, *, data_version, run_id, model_id, seed,
+                   configs=None, split=None, data_files=None,
+                   training_fingerprint=None):
+    """发布清单：列出数据、模型、参考分布、解释、配置的版本（§13.6）。
+
+    `configs`/`split`/`data_files`/`training_fingerprint` 是审计页面的
+    数据来源——审计页只读本清单，不碰 pandas，也不读原始 XLSX。
+    """
     entries = {}
     for name, rows in artifacts.items():
         entries[name] = {
             "n_rows": len(rows),
             "fingerprint": _fingerprint(rows),
         }
-    return {
+    manifest = {
         "schema_version": SCHEMA_VERSION,
         "data_version": data_version,
         "run_id": run_id,
@@ -195,6 +212,15 @@ def build_manifest(artifacts, *, data_version, run_id, model_id, seed):
         "prediction_mode": "oof_replay",
         "data_kind": "real_standard",
     }
+    if configs is not None:
+        manifest["configs"] = dict(configs)
+    if split is not None:
+        manifest["split"] = dict(split)
+    if data_files is not None:
+        manifest["data_files"] = dict(data_files)
+    if training_fingerprint is not None:
+        manifest["training_fingerprint"] = training_fingerprint
+    return manifest
 
 
 def verify_by_pipe_id(*tables):
@@ -226,9 +252,16 @@ def data_version_of(pipe_ids):
     })[:16]
 
 
-def run_id_of(model_id, seed, data_version):
-    return _fingerprint({"model": model_id, "seed": seed,
-                         "data": data_version})[:16]
+def run_id_of(model_id, seed, data_version, *, model_spec=None):
+    """运行标识。
+
+    model_spec 省略时与历史口径逐字节一致；给出时把结构、候选、参数网格、
+    校准策略与划分指纹一并纳入，避免不同配置撞同一 run_id（§13.3）。
+    """
+    payload = {"model": model_id, "seed": seed, "data": data_version}
+    if model_spec is not None:
+        payload["spec"] = model_spec
+    return _fingerprint(payload)[:16]
 
 
 def save_json(rows, path):

@@ -10,6 +10,7 @@ B2 管龄的正则化逻辑回归
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
+from src.data import loader
 from src.data.preprocess import FoldPreprocessor
 
 
@@ -75,10 +76,12 @@ class B2AgeLogReg:
 
 
 def make_preprocessor(layer_columns):
-    """按特征层构建预处理器（§3.2）。"""
-    numeric = [c for c in layer_columns if c in {
-        "PIPEAGE", "GJ", "BURDEP", "QDMS", "ZDMS", "GWLEV", "PRESS", "VELOC",
-    }]
+    """按特征层构建预处理器（§3.2）。
+
+    数值/类别划分由白名单 numeric_fields 声明；不再硬编码，
+    否则 F2 数值字段（RENYR/REPCNT/REPCO2/INSPF）会被误作类别独热。
+    """
+    numeric = [c for c in layer_columns if c in loader.numeric_fields()]
     categorical = [c for c in layer_columns if c not in numeric]
     return FoldPreprocessor(numeric, categorical)
 

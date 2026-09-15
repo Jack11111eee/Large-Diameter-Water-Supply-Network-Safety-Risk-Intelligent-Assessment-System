@@ -1,0 +1,23 @@
+{
+  "version": "protocol_v1",
+  "seed": 20260914,
+  "n_outer": 5,
+  "n_inner": 3,
+  "split_schemes": {
+    "random": null,
+    "road": "SZDL"
+  },
+  "selection": {
+    "criterion": "inner_ap",
+    "tolerance": 0.005,
+    "tie_break": "prefer_lower_complexity_rank"
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "control": "uncalibrated",
+    "degenerate_policy": "退回未校准对照并标记，绝不随机拆散分组补齐"
+  },
+  "metrics": ["ap", "roc_auc", "brier", "log_loss"],
+  "topk_quantiles": [0.01, 0.05, 0.1],
+  "note": "本文件是评测协议的单一可读描述，供发布清单与实验审计页展示；数值须与 src/evaluation/split.py 的冻结常量一致，由测试钉住。"
+}
