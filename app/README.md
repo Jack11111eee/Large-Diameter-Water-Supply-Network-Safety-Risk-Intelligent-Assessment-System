@@ -38,6 +38,11 @@ APP_PACKAGE_DIR=/path/to/package python3 -m streamlit run app/main.py
    L3/L4 视图、参数版本、导出。
 4. **事后运维复核** — 默认**关闭**；开启后以显式 `as_of`（不取系统当前日）调用决策模块的
    `advise_post_event()`。事后建议是独立清单，不改变 p、等级、C、V 或预测清单（§8.5）。
+5. **数据审计** — 只读发布清单：数据文件指纹、配置版本、划分与分组诊断、产物行数与指纹、
+   质量标记分布。不碰 pandas，不读原始 XLSX（§13.6）。
+6. **实验审计** — 发布成绩按聚合口径分块（逐折为主；`pooled_oof_replay` 单独成块并标注
+   **不替代逐折主成绩**）；另有可选的实验包（候选选择日志、校准对照、结构消融）。
+   实验包与发布包**不同源时拒绝并列展示**（§6.4.1、§13.3）。
 
 页级徽章：预测模式（`oof_replay` / `full_fit` / `scenario`）与数据来源
 （`real_standard` / `synthetic_fixture`）。
@@ -55,7 +60,7 @@ APP_PACKAGE_DIR=/path/to/package python3 -m streamlit run app/main.py
 | `theme.py` | 颜色与 Plotly 版式令牌 |
 | `sketch.py` | 本地坐标 / 拓扑示意图，只做呈现 |
 | `components.py` | 共用展示组件（徽章、空 / 错误状态、属性表、解释面板） |
-| `views/` | 页面模块，每个导出一个 `render(package, mode)` |
+| `views/` | 页面模块，每个导出一个 `render(package, mode)`；审计两页只展示已给出的读数 |
 | `main.py` | 入口：装载 → 徽章 → 分发到页面 |
 
 > 页面模块放在 `views/` 而非 `pages/`：Streamlit 会把 `app/pages/` 自动识别为

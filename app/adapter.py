@@ -27,7 +27,11 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DIR = ROOT / "outputs" / "release"
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DECISION_CONFIG_DIR = ROOT / "configs" / "decision"
+# M2 实验产物包（候选选择 / 校准对照 / 结构消融）。与发布包分开存放：
+# 它描述的是候选选择流程，不是发布成绩（§5.2、§5.3、§10 W3）。
+EXPERIMENT_DIR = ROOT / "outputs" / "experiments"
 ENV_PACKAGE_DIR = "APP_PACKAGE_DIR"
+ENV_EXPERIMENT_DIR = "APP_EXPERIMENT_DIR"
 
 # 契约产物 → 文件名
 FILES = {
@@ -44,6 +48,14 @@ FILES = {
 
 # 界面最小闭环所需产物；其余缺失时降级为局部不可用，不拒绝整包。
 REQUIRED_PRODUCTS = ("standard_attributes", "predictions")
+
+# 实验产物包的文件（缺任一个即视为实验包不可用，不拒绝主包）
+EXPERIMENT_FILES = {
+    "selection_log": "selection_log.json",
+    "calibration_report": "calibration_report.json",
+    "ablation": "ablation.json",
+    "manifest": "manifest.json",
+}
 
 # 走契约校验的列表型产物
 LIST_PRODUCTS = ("standard_attributes", "geometry", "predictions",
@@ -209,6 +221,36 @@ class DecisionView:
 
 
 @dataclass(frozen=True)
+class ExperimentBundle:
+    """M2 实验产物包视图。
+
+    与发布包**分开**：它描述候选选择流程（§5.2）、校准对照（§5.3）与
+    结构消融（§10 W3），不是发布成绩。缺失或不完整时如实标不可用，
+    界面显示原因，绝不用发布成绩顶替。
+    """
+
+    available: bool
+    reason: str
+    directory: str
+    run_id: str | None = None
+    data_version: str | None = None
+    structure: str | None = None
+    manifest: dict | None = None
+    selection_log: dict | None = None
+    calibration_report: dict | None = None
+    ablation: dict | None = None
+
+    def same_source_as(self, data_version: str, *, table_fingerprint=None) -> bool:
+        """实验包与发布包是否同源：data_version 与划分表指纹都要对上（§13.3）。"""
+        if not self.available or self.data_version != data_version:
+            return False
+        if table_fingerprint is None:
+            return True
+        split_meta = (self.manifest or {}).get("split") or {}
+        return split_meta.get("table_fingerprint") == table_fingerprint
+
+
+@dataclass(frozen=True)
 class PackageSet:
     """一次装载得到的完整展示包。"""
 
@@ -219,6 +261,7 @@ class PackageSet:
     event_view: list | None
     manifest: dict | None
     decision: DecisionView
+    experiments: ExperimentBundle
 
     @property
     def by_id(self) -> dict:
@@ -226,6 +269,58 @@ class PackageSet:
 
     def pipe(self, pipe_id: str) -> PipeView | None:
         return self.by_id.get(pipe_id)
+
+
+# --------------------------------------------------------------------------
+# 实验产物包（与发布包分开装载，缺失不拒绝主包）
+# --------------------------------------------------------------------------
+
+def _experiment_dir(directory=None) -> Path:
+    if directory is not None:
+        return Path(directory)
+    return Path(os.environ.get(ENV_EXPERIMENT_DIR) or EXPERIMENT_DIR)
+
+
+def _unavailable_experiments(directory: Path, reason: str) -> ExperimentBundle:
+    return ExperimentBundle(available=False, reason=reason,
+                            directory=str(directory))
+
+
+def load_experiments(directory=None) -> ExperimentBundle:
+    """装载 M2 实验产物包。任何缺失或解析失败都如实标不可用，不抛异常。
+
+    实验包是**附加**产物：它的缺失是正常状态，不得因此拒绝主发布包，
+    也不得用发布成绩顶替它（§13.3）。
+    """
+    directory = _experiment_dir(directory)
+    if not directory.is_dir():
+        return _unavailable_experiments(
+            directory, f"实验产物目录不存在（{directory.name}）；实验审计页显示不可用。")
+
+    payloads = {}
+    for key, fname in EXPERIMENT_FILES.items():
+        path = directory / fname
+        if not path.exists():
+            return _unavailable_experiments(
+                directory, f"实验产物包不完整：缺少 {fname}。界面不按部分产物拼读。")
+        try:
+            payloads[key] = _read_json(path)
+        except AdapterError as exc:
+            return _unavailable_experiments(directory, f"{exc}")
+
+    manifest = payloads["manifest"]
+    return ExperimentBundle(
+        available=True,
+        reason="",
+        directory=str(directory),
+        run_id=manifest.get("run_id"),
+        data_version=manifest.get("data_version"),
+        structure=manifest.get("structure"),
+        manifest=manifest,
+        selection_log=payloads["selection_log"],
+        calibration_report=payloads["calibration_report"],
+        ablation=payloads["ablation"],
+    )
 
 
 # --------------------------------------------------------------------------
@@ -703,6 +798,7 @@ def _load_from(directory: Path, *, allow_decision_fixture: bool = True) -> Packa
         event_view=payloads.get("event_view"),
         manifest=payloads.get("manifest"),
         decision=decision,
+        experiments=load_experiments(),
     )
 
 

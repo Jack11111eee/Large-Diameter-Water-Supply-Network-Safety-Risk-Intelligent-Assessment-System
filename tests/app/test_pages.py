@@ -19,7 +19,8 @@ import anonymity  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURES = ROOT / "tests" / "fixtures"
 MAIN = ROOT / "app" / "main.py"
-PAGES = ["风险总览与清单", "管段详情", "资源清单", "事后运维复核"]
+PAGES = ["风险总览与清单", "管段详情", "资源清单", "事后运维复核",
+         "数据审计", "实验审计"]
 TIMEOUT = 300
 
 
