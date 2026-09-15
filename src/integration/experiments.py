@@ -48,7 +48,8 @@ def build_experiments(out_dir=EXPERIMENT_OUT_DIR, *, structure=EXPERIMENT_STRUCT
 
     run_id = release.run_id_of(
         "candidate_flow", split.SEED, data_version,
-        model_spec={"structure": structure, "split_scheme": scheme,
+        model_spec={"role": "experiment", "structure": structure,
+                    "split_scheme": scheme,
                     "table_fingerprint": table_fp,
                     "candidates": MODEL_CONFIG_VERSION})
 

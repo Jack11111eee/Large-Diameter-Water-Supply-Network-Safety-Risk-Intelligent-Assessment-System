@@ -8,9 +8,9 @@ import argparse
 import json
 from pathlib import Path
 
-from src.contracts import validate_package
+from src.contracts import MODEL_CONFIG_VERSION, validate_package
 from src.data import loader
-from src.evaluation import metrics, protocol, reference, runner, split
+from src.evaluation import metrics, protocol, reference, selection, split
 from src.explain import artifacts as explain_artifacts
 from src.evaluation.metrics import aggregate_all
 from src.integration import fullfit as fullfit_mod
@@ -22,18 +22,50 @@ GROUPED_DIR_NAME = "release_grouped"
 GROUPED_OUT_DIR = ROOT / "outputs" / GROUPED_DIR_NAME
 FULL_FIT_OUT_DIR = ROOT / "outputs" / fullfit_mod.FULL_FIT_DIR_NAME
 
-MODEL_ID = "B2_age_logreg"
+# 发布模型（§5.1、§5.2）。M1 冻结的是 B2_age_logreg（仅管龄，单特征）；
+# M2 起换成 F1 层上的候选选择流程——逐外层折在内层 AP 上选候选，
+# 容差 0.005 内优先简单模型。B2 保留为文档化的基线，不再是发布模型。
+#
+# 改这里 = 一次发布模型变更，必须同步三件事（tests/integration/
+# test_release_model_pin.py 会因此失败，那是设计意图，不是回归）：
+#   1. 重建 outputs/ 四个目录
+#   2. 在 里程碑与实施计划.md 记成发布模型变更，附新旧对照成绩
+#   3. 更新钉扎测试里的声明常量
+RELEASE_FLOW_ID = "F1_candidate_flow"
+RELEASE_STRUCTURE = "F1_base_environment"
 SEED = 20260914
 
 # 事件视图的截止日（§8.5）。显式常量：发布时不隐式取系统当前日。
 EVENT_AS_OF = "2024-12-31"
 
 
+def release_run_id(data_version, scheme, table_fingerprint):
+    """发布 run_id。
+
+    把结构、候选集版本、划分方案与划分指纹一并纳入：换了候选集或换了划分，
+    就是另一个发布，不得复用同一 run_id（§13.3）。构建与测试共用本函数，
+    避免哈希口径在两边各写一遍。
+
+    `role` 显式区分发布包与实验包——两者跑的是同一套候选流程、同一划分，
+    只有角色不同，不能让它们靠模型名字符串碰巧不同来避免撞 ID。
+    """
+    return release.run_id_of(
+        RELEASE_FLOW_ID, SEED, data_version,
+        model_spec={
+            "role": "release",
+            "structure": RELEASE_STRUCTURE,
+            "split_scheme": scheme,
+            "table_fingerprint": table_fingerprint,
+            "candidates": MODEL_CONFIG_VERSION,
+        })
+
+
 def build_all(out_dir=OUT_DIR, *, scheme="random"):
     """构建一个发布集合。
 
-    scheme="random" 为冻结的随机分层主协议（§6.1），输出与历史逐字节一致；
+    scheme="random" 为冻结的随机分层主协议（§6.1）；
     scheme="road" 为按道路分组的补充协议（§6.2），写入独立目录、独立 round_id。
+    两种方案的产物都带划分指纹，不得互相覆盖或合并成绩。
     """
     out_dir = Path(out_dir)
     pipes = loader.load_attributes()
@@ -51,17 +83,19 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
     folds = {int(f): g.index.to_numpy() for f, g in table.groupby("outer_fold")}
     table_fp = split.table_fingerprint(table, scheme=scheme)
 
-    # 划分指纹纳入 run_id：两种划分方案不得撞同一发布 ID（§6.2）。
-    # 随机方案保持 M1 冻结口径逐字节不变，故不附 spec。
-    run_id = release.run_id_of(
-        MODEL_ID, SEED, data_version,
-        model_spec=None if scheme == "random" else {
-            "split_scheme": scheme, "table_fingerprint": table_fp})
+    # 划分指纹纳入 run_id：换了划分就是另一个发布（§6.2、§13.3）。
+    run_id = release_run_id(data_version, scheme, table_fp)
+
+    # 候选选择流程（§5.2）：逐外层折只用该折训练集内部信息选候选，
+    # 再看外层成绩。选择日志里没有外层键，回选在结构上不可达。
+    frame = loader.with_derived_features(pipes)
+    candidates = selection.candidates_from_config(
+        loader.resolve_layer(RELEASE_STRUCTURE), seed=SEED)
 
     # 折外预测（固定划分，不重算）。保留每折已拟合的模型与校准器，
     # 供解释复用，避免重新拟合导致解释与已发布预测不一致（§7.1）。
-    oof, fold_state = runner.run_oof(
-        pipes, counts, model_name=MODEL_ID, folds=folds, seed=SEED,
+    oof, selection_log, fold_state = selection.select_and_run(
+        frame, counts, candidates=candidates, folds=folds, seed=SEED,
         groups=groups, split_scheme=scheme, return_fold_state=True)
 
     # 四类聚合成绩
@@ -82,9 +116,10 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
         pipes, events, data_version=data_version, run_id=run_id,
         as_of=EVENT_AS_OF)
 
-    # 解释（§7.1）：解释的是本次发布的折外预测，尺度为 log-odds 原始分数
+    # 解释（§7.1）：解释的是本次发布的折外预测，尺度为 log-odds 原始分数。
+    # 传入模型实际见过的派生特征帧，而非原始属性表——F3 结构的列只在帧里。
     expl_rows = explain_artifacts.build_explanation_rows(
-        pipes, oof, fold_state, data_version=data_version, run_id=run_id,
+        frame, oof, fold_state, data_version=data_version, run_id=run_id,
         seed=SEED)
     broken = explain_artifacts.verify_rows_additivity(expl_rows)
     if broken:
@@ -125,15 +160,33 @@ def build_all(out_dir=OUT_DIR, *, scheme="random"):
         split_meta["grouped_diagnostics"] = split.grouped_fold_diagnostics(
             groups, counts.gt(0).astype(int).to_numpy(), folds)
 
+    # 发布模型是候选选择流程：model_id 记流程标识，逐折实际选中的候选
+    # 单独记在这里。predictions.json 的 model_id 是逐行的候选名——两者
+    # 不同不是矛盾，是「流程」与「该折选中什么」的区别，必须都可查。
+    selection_meta = {
+        "flow": RELEASE_FLOW_ID,
+        "structure": RELEASE_STRUCTURE,
+        "criterion": "inner_ap",
+        "tolerance": 0.005,
+        "candidates_version": MODEL_CONFIG_VERSION,
+        "n_candidates": len(candidates),
+        "chosen_per_fold": {str(f): rec["chosen"]
+                            for f, rec in sorted(selection_log.items())},
+        "distinct_chosen": sorted({rec["chosen"]
+                                   for rec in selection_log.values()}),
+    }
+
     manifest = release.build_manifest(
         {"standard_attributes": std, "geometry": geom, "predictions": preds,
          "reference_bundle": [bundle], "evaluation": ev_rows,
          "event_view": events_view, "explanation": expl_rows},
-        data_version=data_version, run_id=run_id, model_id=MODEL_ID, seed=SEED,
+        data_version=data_version, run_id=run_id, model_id=RELEASE_FLOW_ID,
+        seed=SEED,
         configs=protocol.config_versions(),
         split=split_meta,
         data_files=dict(loader.EXPECTED_SHA256),
-        training_fingerprint=fullfit_mod.training_fingerprint(pipes, counts))
+        training_fingerprint=fullfit_mod.training_fingerprint(pipes, counts),
+        selection=selection_meta)
 
     # 落盘
     release.save_json(std, out_dir / "standard_attributes.json")
@@ -217,7 +270,7 @@ def build_full_fit(out_dir=FULL_FIT_OUT_DIR, *, structure="F1_base_environment")
 
 
 def main():
-    ap = argparse.ArgumentParser(description="M0 发布构建")
+    ap = argparse.ArgumentParser(description="发布构建（§13.6）")
     ap.add_argument("--out", default=str(OUT_DIR))
     ap.add_argument("--scheme", default="random", choices=["random", "road"],
                     help="划分方案：random 为冻结主协议，road 为道路分组补充协议")

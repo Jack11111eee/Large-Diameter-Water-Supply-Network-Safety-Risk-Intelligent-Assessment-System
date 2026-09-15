@@ -9,7 +9,7 @@ import json
 import pytest
 
 from src.data import loader
-from src.integration import experiments, release
+from src.integration import experiments, pipeline, release
 
 # 依赖真实 7,288 条数据或完整发布构建，耗时较长（见 pytest.ini）
 pytestmark = pytest.mark.slow
@@ -60,8 +60,9 @@ def test_experiment_manifest_points_back_at_the_release(built):
 def test_experiment_run_id_differs_from_the_release_run_id(built):
     """实验包与发布包是两条路径，不得撞同一 run_id（§13.3）。"""
     _, result, payloads = built
-    release_run = release.run_id_of("B2_age_logreg", 20260914,
-                                    result["data_version"])
+    release_run = pipeline.release_run_id(
+        result["data_version"], "random",
+        payloads["manifest.json"]["split"]["table_fingerprint"])
     assert payloads["manifest.json"]["run_id"] != release_run
 
 
