@@ -67,3 +67,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Small changes (typos, single-function tweaks, config): commit directly to the current branch.
 - Large changes (new features, wide-ranging bug fixes, refactors touching multiple files): cut a new branch from the current branch's HEAD and do the work there — never develop large changes directly on the original branch (this applies to any existing branch, not just main). When done, merge or PR back into the original branch.
 - Each commit should represent one logical, self-contained unit of work.
+
+## 6. Documentation Sync
+
+**Update the docs in the same commit as the change.** A milestone, interface, or frozen-spec change is not done until the docs describing it match — README, milestone/plan docs, and any other frozen spec. No "code moved on, docs still describe the previous version".
